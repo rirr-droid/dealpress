@@ -28,6 +28,9 @@ export interface ApprovalTemplate {
   deal_amount_threshold?: number;
   created_at: string;
   updated_at: string;
+  steps?: Array<{ name: string; approver_role: string }>;
+  usage_count?: number;
+  avg_approval_time_hours?: number;
 }
 
 export interface ApprovalTemplateStep {

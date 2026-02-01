@@ -43,34 +43,107 @@ export const mockTemplates: ApprovalTemplate[] = [
     id: "1",
     organization_id: "org-1",
     name: "Standard Discount Approval",
-    description: "For deals with discounts between 10-25%",
+    description: "For deals with discounts between 10-25%. Requires approval from Sales Manager and VP of Sales.",
     object_type: "opportunity",
     is_active: true,
     deal_amount_threshold: 50000,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    steps: [
+      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
+      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+    ],
+    usage_count: 42,
+    avg_approval_time_hours: 8
   },
   {
     id: "2",
     organization_id: "org-1",
     name: "Enterprise Deal Review",
-    description: "For enterprise deals over $100k",
+    description: "For enterprise deals over $100k. Full review process including legal and finance approval.",
     object_type: "opportunity",
     is_active: true,
     deal_amount_threshold: 100000,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    steps: [
+      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
+      { name: "VP Sales Approval", approver_role: "VP of Sales" },
+      { name: "Legal Review", approver_role: "Legal" },
+      { name: "Finance Approval", approver_role: "CFO" }
+    ],
+    usage_count: 18,
+    avg_approval_time_hours: 24
   },
   {
     id: "3",
     organization_id: "org-1",
     name: "Quick Approval (< $50k)",
-    description: "Fast-track for smaller deals",
+    description: "Fast-track for smaller deals under $50k. Single approver for speed.",
     object_type: "opportunity",
     is_active: true,
     deal_amount_threshold: 50000,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    steps: [
+      { name: "Sales Manager Approval", approver_role: "Sales Manager" }
+    ],
+    usage_count: 127,
+    avg_approval_time_hours: 4
+  },
+  {
+    id: "4",
+    organization_id: "org-1",
+    name: "Custom Terms Agreement",
+    description: "For deals requiring non-standard contract terms or payment schedules. Requires legal and executive review.",
+    object_type: "opportunity",
+    is_active: true,
+    deal_amount_threshold: 75000,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    steps: [
+      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
+      { name: "Legal Review", approver_role: "Legal" },
+      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+    ],
+    usage_count: 31,
+    avg_approval_time_hours: 16
+  },
+  {
+    id: "5",
+    organization_id: "org-1",
+    name: "Partnership & Reseller Deals",
+    description: "Special approval process for partnership and reseller channel deals with unique margin structures.",
+    object_type: "opportunity",
+    is_active: true,
+    deal_amount_threshold: 25000,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    steps: [
+      { name: "Channel Manager Approval", approver_role: "Channel Manager" },
+      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+    ],
+    usage_count: 23,
+    avg_approval_time_hours: 12
+  },
+  {
+    id: "6",
+    organization_id: "org-1",
+    name: "Government & Public Sector",
+    description: "Specialized workflow for government contracts with compliance and security review requirements.",
+    object_type: "opportunity",
+    is_active: false,
+    deal_amount_threshold: 50000,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    steps: [
+      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
+      { name: "Security Review", approver_role: "Security Officer" },
+      { name: "Compliance Review", approver_role: "Compliance" },
+      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+    ],
+    usage_count: 7,
+    avg_approval_time_hours: 36
   }
 ];
 
