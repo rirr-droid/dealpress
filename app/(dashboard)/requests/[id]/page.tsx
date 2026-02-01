@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import { mockRequests, mockUsers } from "@/lib/mock-data";
 import ApprovalTracker from "@/components/ApprovalTracker";
 import { Card } from "@/components/ui/card";
@@ -11,8 +10,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 
-export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function RequestDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const { toast } = useToast();
 
