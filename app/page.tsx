@@ -11,12 +11,12 @@ export default function LandingPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-[#1d1d1f]">Dealpress</h1>
             <div className="flex items-center gap-4">
-              <Link href="/dashboard">
+              <Link href="/login">
                 <Button variant="ghost" className="text-[#1d1d1f]">
                   Sign In
                 </Button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/signup">
                 <Button className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full">
                   Get Started
                 </Button>
@@ -36,9 +36,9 @@ export default function LandingPage() {
           real-time notifications, and seamless CRM integration.
         </p>
         <div className="flex items-center justify-center gap-4">
-          <Link href="/dashboard">
+          <Link href="/signup">
             <Button size="lg" className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full text-lg px-8 py-6">
-              Try Demo →
+              Get Started Free →
             </Button>
           </Link>
         </div>
