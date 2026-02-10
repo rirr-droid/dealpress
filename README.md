@@ -34,11 +34,68 @@ npm run build
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-## Deploy to Vercel
+## Demo
+
+The app includes pre-loaded demo data with:
+- 5 sample approval requests in different states
+- 5 team members with different roles
+- 6 approval workflow templates
+- Interactive approval tracker showing pending approvals for Michael Park
+
+Navigate to `/dashboard` to see the full experience.
+
+## Deploy to Production
+
+### Option 1: Vercel (Recommended)
+
+1. Push this repo to GitHub
+2. Go to [vercel.com](https://vercel.com) and sign in with GitHub
+3. Click "Add New Project" and select this repository
+4. Click "Deploy" - Vercel auto-detects Next.js settings
+5. Your app will be live at `https://your-project.vercel.app`
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 
-Push to GitHub, then import in Vercel. It will auto-detect Next.js and deploy.
+### Option 2: Other Platforms
+
+This is a standard Next.js 14 app and can deploy to:
+- Railway
+- Netlify
+- AWS Amplify
+- Cloudflare Pages
+
+### Adding a Custom Domain
+
+In Vercel:
+1. Go to Project Settings → Domains
+2. Add your domain (e.g., `app.dealpress.com`)
+3. Follow DNS configuration instructions
+4. SSL certificate is automatic
+
+## Customer Testing Tips
+
+**For Beta Testing:**
+1. Deploy to Vercel and get your live URL
+2. Share the `/dashboard` link with testers
+3. The demo uses Michael Park as the logged-in user
+4. Enable Vercel Analytics to track usage
+5. Collect feedback via a form or survey tool
+
+**Demo Login Flow:**
+Currently using mock data (no auth required). To add authentication:
+- Install `@supabase/auth-helpers-nextjs` for user auth
+- Add sign-up/login pages
+- Protect dashboard routes with middleware
+
+## Roadmap
+
+- [ ] User authentication with Supabase
+- [ ] Real database integration
+- [ ] Email notifications
+- [ ] Salesforce/HubSpot integration
+- [ ] One-click email approvals
+- [ ] Template builder UI
+- [ ] Mobile app
 
 ## License
 
