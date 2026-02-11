@@ -21,7 +21,7 @@ A standalone SaaS approval workflow application for sales teams. Built with Next
 
 ## Getting Started
 
-### Phase 1: Development Setup (Current)
+### Setup Instructions
 
 ```bash
 # 1. Install dependencies
@@ -42,11 +42,29 @@ npm run dev
 
 # 5. Create your first account
 # Go to http://localhost:3000/signup
+
+# 6. (Optional) Seed demo data
+npm run seed
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 **⚠️ Important**: You must complete Supabase setup before authentication will work. See **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** for detailed instructions.
+
+### Demo Data
+
+After signing up, you can populate the database with demo data for testing:
+
+```bash
+npm run seed
+```
+
+This creates:
+- 3 additional demo users
+- 2 approval templates
+- 4 sample approval requests at various stages
+
+See `scripts/README.md` for more details.
 
 ## Demo
 

@@ -1,22 +1,17 @@
-"use client";
-
-import { useState } from "react";
-import { mockRequests } from "@/lib/mock-data";
+import { getRequests } from "@/lib/db/requests";
+import { getActiveTemplates } from "@/lib/db/templates";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import CreateRequestDialog from "@/components/CreateRequestDialog";
 import Link from "next/link";
-import { Clock, Plus } from "lucide-react";
-import { motion } from "framer-motion";
+import { Clock } from "lucide-react";
 
-type FilterStatus = "all" | "pending" | "approved" | "rejected";
+export const dynamic = 'force-dynamic';
 
-export default function RequestsPage() {
-  const [filter, setFilter] = useState<FilterStatus>("all");
-
-  const filteredRequests = filter === "all"
-    ? mockRequests
-    : mockRequests.filter(r => r.status === filter);
+export default async function RequestsPage() {
+  const requests = await getRequests();
+  const templates = await getActiveTemplates();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -44,6 +39,13 @@ export default function RequestsPage() {
     }
   };
 
+  // Get current step name
+  const getCurrentStepName = (request: { steps?: Array<{ status: string; step_name: string }> }) => {
+    if (!request.steps || request.steps.length === 0) return undefined;
+    const pendingStep = request.steps.find((s) => s.status === 'pending');
+    return pendingStep?.step_name;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -52,50 +54,23 @@ export default function RequestsPage() {
           <h1 className="text-3xl font-bold text-[#1d1d1f] mb-2">Approval Requests</h1>
           <p className="text-[#86868b]">Manage all approval requests</p>
         </div>
-        <Button className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full">
-          <Plus className="mr-2 h-4 w-4" />
-          New Request
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-3">
-        {(["all", "pending", "approved", "rejected"] as const).map((status) => (
-          <Button
-            key={status}
-            variant={filter === status ? "default" : "outline"}
-            onClick={() => setFilter(status)}
-            className={`rounded-full capitalize ${
-              filter === status
-                ? "bg-[#0071e3] hover:bg-[#0077ed]"
-                : "border-gray-200"
-            }`}
-          >
-            {status}
-            {status === "all" && ` (${mockRequests.length})`}
-            {status === "pending" && ` (${mockRequests.filter(r => r.status === "pending").length})`}
-            {status === "approved" && ` (${mockRequests.filter(r => r.status === "approved").length})`}
-            {status === "rejected" && ` (${mockRequests.filter(r => r.status === "rejected").length})`}
-          </Button>
-        ))}
+        <CreateRequestDialog templates={templates} />
       </div>
 
       {/* Requests List */}
       <div className="space-y-4">
-        {filteredRequests.length === 0 ? (
+        {requests.length === 0 ? (
           <Card className="p-12 text-center rounded-[18px] border border-gray-200">
-            <h3 className="text-lg font-semibold text-[#1d1d1f] mb-2">No requests found</h3>
-            <p className="text-[#86868b]">Try adjusting your filters</p>
+            <h3 className="text-lg font-semibold text-[#1d1d1f] mb-2">No requests yet</h3>
+            <p className="text-[#86868b] mb-4">Create your first approval request to get started</p>
+            <CreateRequestDialog templates={templates} />
           </Card>
         ) : (
-          filteredRequests.map((request, index) => (
-            <motion.div
-              key={request.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Link href={`/requests/${request.id}`}>
+          requests.map((request) => {
+            const currentStepName = getCurrentStepName(request);
+
+            return (
+              <Link key={request.id} href={`/requests/${request.id}`}>
                 <Card className={`p-6 rounded-[18px] border-l-4 hover:shadow-md transition-all cursor-pointer ${getPriorityColor(request.priority)}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -106,15 +81,19 @@ export default function RequestsPage() {
                         {getStatusBadge(request.status)}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-[#86868b] mb-3">
-                        <span className="font-semibold text-[#1d1d1f]">
-                          ${request.deal_amount?.toLocaleString()}
-                        </span>
-                        <span>•</span>
+                        {request.deal_amount && (
+                          <>
+                            <span className="font-semibold text-[#1d1d1f]">
+                              ${request.deal_amount.toLocaleString()}
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
                         <span>{request.requester?.name}</span>
-                        {request.current_step_name && (
+                        {currentStepName && (
                           <>
                             <span>•</span>
-                            <span>{request.current_step_name}</span>
+                            <span>{currentStepName}</span>
                           </>
                         )}
                       </div>
@@ -134,8 +113,8 @@ export default function RequestsPage() {
                   </div>
                 </Card>
               </Link>
-            </motion.div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
