@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Home, FileText, Settings, LayoutTemplate, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { mockUsers } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/client";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -14,9 +14,25 @@ const navigation = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url?: string;
+  };
+}
+
+export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
-  const currentUser = mockUsers[1]; // Mock: Michael Park (admin)
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/');
+    router.refresh();
+  };
 
   return (
     <div className="flex h-full w-64 flex-col bg-white border-r border-gray-200">
@@ -56,15 +72,16 @@ export default function Sidebar() {
       <div className="border-t border-gray-200 p-4">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={currentUser.avatar_url} />
-            <AvatarFallback>{currentUser.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+            <AvatarImage src={user.avatar_url} />
+            <AvatarFallback>{user.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1d1d1f] truncate">{currentUser.name}</p>
-            <p className="text-xs text-[#86868b] truncate">{currentUser.email}</p>
+            <p className="text-sm font-semibold text-[#1d1d1f] truncate">{user.name}</p>
+            <p className="text-xs text-[#86868b] truncate">{user.email}</p>
           </div>
         </div>
         <Button
+          onClick={handleLogout}
           variant="outline"
           size="sm"
           className="w-full text-[#86868b] border-gray-200 hover:bg-gray-50"

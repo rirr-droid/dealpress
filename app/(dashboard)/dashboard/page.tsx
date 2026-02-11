@@ -1,17 +1,24 @@
-"use client";
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { mockRequests, mockMetrics, getPendingApprovalsForUser, mockUsers } from "@/lib/mock-data";
+import { getRequests, getPendingApprovalsForUser, getDashboardMetrics, getCurrentStepName } from "@/lib/db/requests";
+import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 import { Clock, CheckCircle, TrendingUp, FileText } from "lucide-react";
-import { motion } from "framer-motion";
 
-export default function DashboardPage() {
-  const currentUser = mockUsers[1]; // Michael Park
-  const myPendingApprovals = getPendingApprovalsForUser(currentUser.id);
-  const metrics = mockMetrics;
+// Make this a server component
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardPage() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return null; // Will be caught by middleware
+  }
+
+  const requests = await getRequests();
+  const myPendingApprovals = await getPendingApprovalsForUser(user.id);
+  const metrics = await getDashboardMetrics();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -44,74 +51,50 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-[#1d1d1f] mb-2">Dashboard</h1>
-        <p className="text-[#86868b]">Welcome back, {currentUser.name}</p>
+        <p className="text-[#86868b]">Welcome back</p>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0 }}
-        >
-          <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <FileText className="w-5 h-5 text-[#0071e3]" />
-              </div>
+        <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <FileText className="w-5 h-5 text-[#0071e3]" />
             </div>
-            <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.totalRequests}</p>
-            <p className="text-sm text-[#86868b]">Total Requests</p>
-          </Card>
-        </motion.div>
+          </div>
+          <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.totalRequests}</p>
+          <p className="text-sm text-[#86868b]">Total Requests</p>
+        </Card>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-orange-50 rounded-lg">
-                <Clock className="w-5 h-5 text-[#ff9500]" />
-              </div>
+        <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-orange-50 rounded-lg">
+              <Clock className="w-5 h-5 text-[#ff9500]" />
             </div>
-            <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.pendingApprovals}</p>
-            <p className="text-sm text-[#86868b]">Pending Approvals</p>
-          </Card>
-        </motion.div>
+          </div>
+          <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.pendingApprovals}</p>
+          <p className="text-sm text-[#86868b]">Pending Approvals</p>
+        </Card>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-green-50 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-[#34c759]" />
-              </div>
+        <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-green-50 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-[#34c759]" />
             </div>
-            <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.approvalRate}%</p>
-            <p className="text-sm text-[#86868b]">Approval Rate</p>
-          </Card>
-        </motion.div>
+          </div>
+          <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.approvalRate}%</p>
+          <p className="text-sm text-[#86868b]">Approval Rate</p>
+        </Card>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-[#0071e3]" />
-              </div>
+        <Card className="p-6 rounded-[18px] border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-[#0071e3]" />
             </div>
-            <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.avgApprovalTime}h</p>
-            <p className="text-sm text-[#86868b]">Avg Approval Time</p>
-          </Card>
-        </motion.div>
+          </div>
+          <p className="text-2xl font-bold text-[#1d1d1f]">{metrics.avgApprovalTime}h</p>
+          <p className="text-sm text-[#86868b]">Avg Approval Time</p>
+        </Card>
       </div>
 
       {/* My Pending Approvals */}
@@ -133,14 +116,11 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {myPendingApprovals.map((request, index) => (
-              <motion.div
-                key={request.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Link href={`/requests/${request.id}`}>
+            {myPendingApprovals.map((request) => {
+              const currentStepName = getCurrentStepName(request);
+
+              return (
+                <Link key={request.id} href={`/requests/${request.id}`}>
                   <Card className={`p-6 rounded-[18px] border-l-4 hover:shadow-md transition-all cursor-pointer ${getPriorityColor(request.priority)}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -151,11 +131,15 @@ export default function DashboardPage() {
                           {getStatusBadge(request.status)}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-[#86868b] mb-3">
-                          <span className="font-semibold text-[#1d1d1f]">
-                            ${request.deal_amount?.toLocaleString()}
-                          </span>
-                          <span>•</span>
-                          <span>{request.current_step_name}</span>
+                          {request.deal_amount && (
+                            <>
+                              <span className="font-semibold text-[#1d1d1f]">
+                                ${request.deal_amount.toLocaleString()}
+                              </span>
+                              <span>•</span>
+                            </>
+                          )}
+                          {currentStepName && <span>{currentStepName}</span>}
                         </div>
                         {request.reason && (
                           <p className="text-sm text-[#86868b] mb-3">{request.reason}</p>
@@ -173,8 +157,8 @@ export default function DashboardPage() {
                     </div>
                   </Card>
                 </Link>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -183,7 +167,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-bold text-[#1d1d1f] mb-6">Recent Activity</h2>
         <div className="space-y-3">
-          {mockRequests.slice(0, 5).map((request) => (
+          {requests.slice(0, 5).map((request) => (
             <Link key={request.id} href={`/requests/${request.id}`}>
               <Card className="p-4 rounded-xl border border-gray-200 hover:shadow-sm transition-all cursor-pointer">
                 <div className="flex items-center justify-between">
@@ -195,7 +179,8 @@ export default function DashboardPage() {
                       {getStatusBadge(request.status)}
                     </div>
                     <p className="text-xs text-[#86868b] mt-1">
-                      ${request.deal_amount?.toLocaleString()} • {request.requester?.name}
+                      {request.deal_amount && `$${request.deal_amount.toLocaleString()} • `}
+                      {request.requester?.name}
                     </p>
                   </div>
                 </div>
