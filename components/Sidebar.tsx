@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, Settings, LayoutTemplate, LogOut } from "lucide-react";
+import { Home, FileText, Settings, LayoutTemplate, LogOut, BarChart3, Activity } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +11,8 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Requests", href: "/requests", icon: FileText },
   { name: "Templates", href: "/templates", icon: LayoutTemplate },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Activity", href: "/activity", icon: Activity },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

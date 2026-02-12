@@ -21,13 +21,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ApprovalRequest } from "@/types";
+import type { StepComment } from "@/lib/db/comments";
 
 interface RequestDetailClientProps {
   request: ApprovalRequest;
   currentUserId: string;
+  stepComments?: Record<string, StepComment[]>;
 }
 
-export default function RequestDetailClient({ request, currentUserId }: RequestDetailClientProps) {
+export default function RequestDetailClient({ request, currentUserId, stepComments }: RequestDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -187,6 +189,7 @@ export default function RequestDetailClient({ request, currentUserId }: RequestD
         <ApprovalTracker
           request={request}
           currentUserId={currentUserId}
+          stepComments={stepComments}
           onApprove={handleApprove}
           onReject={handleReject}
         />

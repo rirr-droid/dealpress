@@ -1,5 +1,6 @@
 import { getRequest } from "@/lib/db/requests";
 import { getCurrentUser } from "@/lib/auth";
+import { getStepComments } from "@/lib/db/comments";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -31,5 +32,26 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
     );
   }
 
-  return <RequestDetailClient request={request} currentUserId={user.id} />;
+  // Fetch comments for all steps
+  const stepIds = request.steps?.map((step: { id: string }) => step.id) || [];
+  const stepCommentsArray = await Promise.all(
+    stepIds.map(async (stepId: string) => ({
+      stepId,
+      comments: await getStepComments(stepId),
+    }))
+  );
+
+  // Convert to a Record<stepId, comments[]> for easy lookup
+  const stepComments = stepCommentsArray.reduce((acc, item) => {
+    acc[item.stepId] = item.comments;
+    return acc;
+  }, {} as Record<string, typeof stepCommentsArray[0]['comments']>);
+
+  return (
+    <RequestDetailClient
+      request={request}
+      currentUserId={user.id}
+      stepComments={stepComments}
+    />
+  );
 }

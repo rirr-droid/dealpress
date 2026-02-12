@@ -1,18 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { ApprovalRequest, StepStatus } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Clock, XCircle, Circle, AlertCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { CheckCircle2, Clock, XCircle, Circle, AlertCircle, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getWaitingTime } from "@/lib/mock-data";
 import { formatDistanceToNow } from "date-fns";
+import CommentThread from "./CommentThread";
+import type { StepComment } from "@/lib/db/comments";
 
 interface ApprovalTrackerProps {
   request: ApprovalRequest;
   currentUserId?: string;
+  stepComments?: Record<string, StepComment[]>;
   onApprove?: (stepId: string, comments?: string) => void;
   onReject?: (stepId: string, comments?: string) => void;
 }
@@ -48,6 +52,7 @@ function getStatusColor(status: StepStatus): string {
 export default function ApprovalTracker({
   request,
   currentUserId,
+  stepComments = {},
   onApprove,
   onReject
 }: ApprovalTrackerProps) {
@@ -55,6 +60,16 @@ export default function ApprovalTracker({
   const totalSteps = steps.length;
   const completedSteps = steps.filter(s => s.status === "approved").length;
   const progress = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
+
+  // Track which step comments are expanded
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+
+  const toggleComments = (stepId: string) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [stepId]: !prev[stepId]
+    }));
+  };
 
   return (
     <Card className="p-8 shadow-lg border border-gray-200 bg-white rounded-[18px]">
@@ -185,6 +200,44 @@ export default function ApprovalTracker({
                           Reject
                         </Button>
                       </motion.div>
+                    )}
+
+                    {/* Comments Section */}
+                    {currentUserId && (
+                      <div className="mt-4 border-t border-gray-200 pt-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleComments(step.id)}
+                          className="text-[#86868b] hover:text-[#1d1d1f] -ml-2"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          {stepComments[step.id]?.length || 0} Comments
+                          {expandedComments[step.id] ? (
+                            <ChevronUp className="w-4 h-4 ml-2" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 ml-2" />
+                          )}
+                        </Button>
+
+                        <AnimatePresence>
+                          {expandedComments[step.id] && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="mt-4"
+                            >
+                              <CommentThread
+                                stepId={step.id}
+                                comments={stepComments[step.id] || []}
+                                currentUserId={currentUserId}
+                              />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     )}
                   </div>
                 </div>
