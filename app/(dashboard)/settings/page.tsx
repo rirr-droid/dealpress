@@ -2,7 +2,8 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Bell, Users, Plug, Mail } from "lucide-react";
+import { Settings, Bell, Users, Plug, Mail, CreditCard } from "lucide-react";
+import Link from "next/link";
 
 export default function SettingsPage() {
   return (
@@ -15,6 +16,26 @@ export default function SettingsPage() {
 
       {/* Settings Sections */}
       <div className="grid gap-4">
+        {/* Billing */}
+        <Card className="p-6 rounded-[18px] border border-gray-200">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-[#0071e3]/10 rounded-lg">
+              <CreditCard className="w-6 h-6 text-[#0071e3]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-[#1d1d1f] mb-1">Billing & Usage</h3>
+              <p className="text-sm text-[#86868b] mb-4">
+                Manage your subscription, view usage, and update payment methods
+              </p>
+              <Link href="/settings/billing">
+                <Button className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full">
+                  Manage Billing
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+
         {/* Notifications */}
         <Card className="p-6 rounded-[18px] border border-gray-200">
           <div className="flex items-start gap-4">

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { ApprovalTemplate } from "@/types";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 interface CreateRequestDialogProps {
   templates: ApprovalTemplate[];
@@ -37,6 +38,8 @@ export default function CreateRequestDialog({ templates, trigger }: CreateReques
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
 
   // Form state
   const [dealName, setDealName] = useState("");
@@ -99,11 +102,18 @@ export default function CreateRequestDialog({ templates, trigger }: CreateReques
           router.push(`/requests/${result.data.id}`);
         }
       } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to create request",
-          variant: "destructive",
-        });
+        // Check if it's a usage limit error
+        if ('errorCode' in result && result.errorCode === 'USAGE_LIMIT_REACHED') {
+          setUpgradeMessage(result.error || "Upgrade to Pro for unlimited requests");
+          setOpen(false);
+          setShowUpgradePrompt(true);
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to create request",
+            variant: "destructive",
+          });
+        }
       }
     });
   };
@@ -251,6 +261,12 @@ export default function CreateRequestDialog({ templates, trigger }: CreateReques
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <UpgradePrompt
+        open={showUpgradePrompt}
+        onOpenChange={setShowUpgradePrompt}
+        message={upgradeMessage}
+      />
     </Dialog>
   );
 }

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, getUserOrgId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { canPerformAction } from "@/lib/billing/usage";
 
 interface CreateRequestInput {
   deal_name: string;
@@ -26,7 +27,11 @@ export async function createRequest(input: CreateRequestInput) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // TODO: Check usage limits for free tier (Phase 3)
+    // Check usage limits
+    const { allowed, reason } = await canPerformAction(orgId, 'create_request');
+    if (!allowed) {
+      return { success: false, error: reason, errorCode: 'USAGE_LIMIT_REACHED' };
+    }
 
     // Get template if specified
     interface TemplateStep {
