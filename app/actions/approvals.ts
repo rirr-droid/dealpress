@@ -3,6 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, getUserOrgId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import {
+  sendRequestApprovedEmail,
+  sendRequestRejectedEmail,
+  sendStepApprovedEmail,
+  sendApprovalNeededEmail,
+} from "@/lib/email/notifications";
 
 /**
  * Approve an approval step
@@ -16,6 +22,15 @@ export async function approveStep(stepId: string, comments?: string) {
     if (!user || !orgId) {
       return { success: false, error: 'Unauthorized' };
     }
+
+    // Get approver profile for name
+    const { data: approverProfile } = await supabase
+      .from('user_profiles')
+      .select('name')
+      .eq('id', user.id)
+      .single();
+
+    const approverName = approverProfile?.name || user.email!;
 
     // Update the step to approved
     const { data: step, error: stepError } = await supabase
@@ -41,7 +56,7 @@ export async function approveStep(stepId: string, comments?: string) {
     // Check if all steps are now approved
     const { data: allSteps } = await supabase
       .from('approval_steps')
-      .select('id, status, step_order')
+      .select('id, status, step_order, step_name, approver:approver_id(name, email)')
       .eq('request_id', step.request.id)
       .order('step_order');
 
@@ -56,14 +71,58 @@ export async function approveStep(stepId: string, comments?: string) {
           completed_at: new Date().toISOString(),
         })
         .eq('id', step.request.id);
+
+      // Send final approval email to requester
+      if (step.request.requester?.email) {
+        await sendRequestApprovedEmail({
+          requesterEmail: step.request.requester.email,
+          requesterName: step.request.requester.name,
+          approverName,
+          dealName: step.request.deal_name,
+          dealAmount: step.request.deal_amount || undefined,
+          comments: comments || undefined,
+          requestId: step.request.id,
+        });
+      }
     } else {
       // Move to next step
       const nextPendingStep = allSteps?.find(s => s.status === 'not-started');
       if (nextPendingStep) {
         await supabase
           .from('approval_steps')
-          .update({ status: 'pending' })
+          .update({ status: 'pending', assigned_at: new Date().toISOString() })
           .eq('id', nextPendingStep.id);
+
+        // Send progress update to requester
+        if (step.request.requester?.email) {
+          await sendStepApprovedEmail({
+            requesterEmail: step.request.requester.email,
+            requesterName: step.request.requester.name,
+            approverName,
+            dealName: step.request.deal_name,
+            stepName: step.step_name,
+            nextStepName: nextPendingStep.step_name,
+            requestId: step.request.id,
+          });
+        }
+
+        // Send approval needed email to next approver
+        const nextApprover = Array.isArray(nextPendingStep.approver)
+          ? nextPendingStep.approver[0]
+          : nextPendingStep.approver;
+
+        if (nextApprover?.email) {
+          await sendApprovalNeededEmail({
+            approverEmail: nextApprover.email,
+            approverName: nextApprover.name,
+            requesterName: step.request.requester?.name || 'Someone',
+            dealName: step.request.deal_name,
+            dealAmount: step.request.deal_amount || undefined,
+            reason: step.request.reason || undefined,
+            stepName: nextPendingStep.step_name,
+            requestId: step.request.id,
+          });
+        }
       }
     }
 
@@ -134,6 +193,28 @@ export async function rejectStep(stepId: string, comments: string) {
         completed_at: new Date().toISOString(),
       })
       .eq('id', step.request.id);
+
+    // Get approver profile for name
+    const { data: approverProfile } = await supabase
+      .from('user_profiles')
+      .select('name')
+      .eq('id', user.id)
+      .single();
+
+    const approverName = approverProfile?.name || user.email!;
+
+    // Send rejection email to requester
+    if (step.request.requester?.email) {
+      await sendRequestRejectedEmail({
+        requesterEmail: step.request.requester.email,
+        requesterName: step.request.requester.name,
+        approverName,
+        dealName: step.request.deal_name,
+        dealAmount: step.request.deal_amount || undefined,
+        comments,
+        requestId: step.request.id,
+      });
+    }
 
     // Create audit log
     await supabase.from('audit_logs').insert({

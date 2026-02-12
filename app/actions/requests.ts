@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, getUserOrgId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { canPerformAction } from "@/lib/billing/usage";
+import { sendApprovalNeededEmail } from "@/lib/email/notifications";
 
 interface CreateRequestInput {
   deal_name: string;
@@ -107,13 +108,44 @@ export async function createRequest(input: CreateRequestInput) {
         };
       });
 
-      const { error: stepsError } = await supabase
+      const { data: createdSteps, error: stepsError } = await supabase
         .from('approval_steps')
-        .insert(steps);
+        .insert(steps)
+        .select('*, approver:approver_id(name, email)');
 
       if (stepsError) {
         console.error('Error creating steps:', stepsError);
         // Don't fail the request, just log error
+      }
+
+      // Send email to first approver
+      if (createdSteps && createdSteps.length > 0) {
+        const firstStep = createdSteps[0];
+        const firstApprover = Array.isArray(firstStep.approver)
+          ? firstStep.approver[0]
+          : firstStep.approver;
+
+        if (firstApprover?.email) {
+          // Get requester profile for name
+          const { data: requesterProfile } = await supabase
+            .from('user_profiles')
+            .select('name')
+            .eq('id', user.id)
+            .single();
+
+          const requesterName = requesterProfile?.name || user.email!;
+
+          await sendApprovalNeededEmail({
+            approverEmail: firstApprover.email,
+            approverName: firstApprover.name,
+            requesterName,
+            dealName: input.deal_name,
+            dealAmount: input.deal_amount,
+            reason: input.reason,
+            stepName: firstStep.step_name,
+            requestId: request.id,
+          });
+        }
       }
     }
 
@@ -125,8 +157,6 @@ export async function createRequest(input: CreateRequestInput) {
       action: 'request.created',
       metadata: { deal_name: input.deal_name, template_id: input.template_id },
     });
-
-    // TODO: Send email notification (Phase 4)
 
     // Revalidate pages
     revalidatePath('/dashboard');
