@@ -19,10 +19,10 @@ export async function getRequests() {
     .from('approval_requests')
     .select(`
       *,
-      requester:requester_id(id, name, email, avatar_url),
+      requester:user_profiles!requester_id(id, name, email, avatar_url),
       steps:approval_steps(
         *,
-        approver:approver_id(id, name, email, avatar_url)
+        approver:user_profiles!approver_id(id, name, email, avatar_url)
       )
     `)
     .eq('organization_id', orgId)
@@ -52,10 +52,10 @@ export async function getRequest(id: string) {
     .from('approval_requests')
     .select(`
       *,
-      requester:requester_id(id, name, email, avatar_url),
+      requester:user_profiles!requester_id(id, name, email, avatar_url),
       steps:approval_steps(
         *,
-        approver:approver_id(id, name, email, avatar_url)
+        approver:user_profiles!approver_id(id, name, email, avatar_url)
       )
     `)
     .eq('id', id)
@@ -85,10 +85,10 @@ export async function getMySubmittedRequests(userId: string) {
     .from('approval_requests')
     .select(`
       *,
-      requester:requester_id(id, name, email, avatar_url),
+      requester:user_profiles!requester_id(id, name, email, avatar_url),
       steps:approval_steps(
         *,
-        approver:approver_id(id, name, email, avatar_url)
+        approver:user_profiles!approver_id(id, name, email, avatar_url)
       )
     `)
     .eq('organization_id', orgId)
@@ -140,10 +140,10 @@ export async function getPendingApprovalsForUser(userId: string) {
     .from('approval_requests')
     .select(`
       *,
-      requester:requester_id(id, name, email, avatar_url),
+      requester:user_profiles!requester_id(id, name, email, avatar_url),
       steps:approval_steps(
         *,
-        approver:approver_id(id, name, email, avatar_url)
+        approver:user_profiles!approver_id(id, name, email, avatar_url)
       )
     `)
     .eq('organization_id', orgId)
