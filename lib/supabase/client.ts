@@ -8,18 +8,8 @@ export function createClient() {
     throw new Error('Missing Supabase environment variables');
   }
 
-  // Log to help debug (remove in production)
-  console.log('Creating Supabase client with:', {
-    url: supabaseUrl,
-    keyLength: supabaseAnonKey.length,
-    keyStart: supabaseAnonKey.substring(0, 10)
-  });
+  console.log('Creating Supabase client - URL and key are valid');
 
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    }
-  });
+  // Create client without extra options (same as working hardcoded test)
+  return createSupabaseClient(supabaseUrl, supabaseAnonKey);
 }
