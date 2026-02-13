@@ -19,15 +19,19 @@ export default function SignupPage() {
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
-    const supabase = createClient();
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
       console.log('Starting signup with:', { email, name, companyName });
+      console.log('Creating Supabase client...');
+
+      const supabase = createClient();
+      console.log('Client created successfully');
 
       // Create user account
+      console.log('Calling signUp...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -36,7 +40,6 @@ export default function SignupPage() {
             name,
             company_name: companyName,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
