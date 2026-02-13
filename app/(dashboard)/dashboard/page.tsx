@@ -182,7 +182,10 @@ export default async function DashboardPage() {
       {/* My Submitted Requests */}
       <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-[#1d1d1f]">My Submitted Requests</h2>
+            <h2 className="text-2xl font-bold text-[#1d1d1f]">
+              My Submitted Requests
+              <span className="text-sm text-[#86868b] ml-2">({mySubmittedRequests.length})</span>
+            </h2>
             <Link href="/requests">
               <Button variant="outline" className="rounded-full">
                 View All
@@ -193,6 +196,7 @@ export default async function DashboardPage() {
           {mySubmittedRequests.length === 0 ? (
             <Card className="p-12 text-center rounded-[18px] border border-gray-200">
               <p className="text-[#86868b]">You haven't submitted any requests yet.</p>
+              <p className="text-xs text-[#86868b] mt-2">User ID: {user.id}</p>
             </Card>
           ) : (
             <div className="space-y-4">
