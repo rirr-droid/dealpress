@@ -50,13 +50,12 @@ export default function CreateTemplateDialog({ open, onOpenChange, template }: C
       setDescription(template.description || "");
       setDealAmountThreshold(template.deal_amount_threshold?.toString() || "");
       setIsActive(template.is_active);
-      setSteps(
-        template.steps && template.steps.length > 0
-          ? template.steps
-              .sort((a, b) => a.step_order - b.step_order)
-              .map(s => ({ step_name: s.step_name, approver_role: s.approver_role || "" }))
-          : [{ step_name: "", approver_role: "" }]
-      );
+      if (template.steps && template.steps.length > 0) {
+        const sortedSteps = [...template.steps].sort((a, b) => a.step_order - b.step_order);
+        setSteps(sortedSteps.map(s => ({ step_name: s.step_name, approver_role: s.approver_role || "" })));
+      } else {
+        setSteps([{ step_name: "", approver_role: "" }]);
+      }
     } else {
       resetForm();
     }
