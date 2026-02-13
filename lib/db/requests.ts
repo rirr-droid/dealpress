@@ -82,26 +82,57 @@ export async function getRequest(id: string) {
     return null;
   }
 
-  const { data, error } = await supabase
+  // Get the request
+  const { data: request, error: requestError } = await supabase
     .from('approval_requests')
-    .select(`
-      *,
-      requester:user_profiles!requester_id(id, name, email, avatar_url),
-      steps:approval_steps(
-        *,
-        approver:user_profiles!approver_id(id, name, email, avatar_url)
-      )
-    `)
+    .select('*')
     .eq('id', id)
     .eq('organization_id', orgId)
     .single();
 
-  if (error) {
-    console.error('Error fetching request:', error);
+  if (requestError || !request) {
+    console.error('Error fetching request:', requestError);
     return null;
   }
 
-  return data;
+  // Get requester profile
+  const { data: requester } = await supabase
+    .from('user_profiles')
+    .select('id, name, email, avatar_url')
+    .eq('id', request.requester_id)
+    .single();
+
+  // Get steps
+  const { data: steps } = await supabase
+    .from('approval_steps')
+    .select('*')
+    .eq('request_id', id);
+
+  // Get approver profiles
+  if (steps && steps.length > 0) {
+    const approverIds = [...new Set(steps.map(s => s.approver_id))];
+    const { data: approvers } = await supabase
+      .from('user_profiles')
+      .select('id, name, email, avatar_url')
+      .in('id', approverIds);
+
+    const approverMap = new Map((approvers || []).map(p => [p.id, p]));
+
+    return {
+      ...request,
+      requester,
+      steps: steps.map(step => ({
+        ...step,
+        approver: approverMap.get(step.approver_id)
+      }))
+    };
+  }
+
+  return {
+    ...request,
+    requester,
+    steps: []
+  };
 }
 
 /**
@@ -115,16 +146,10 @@ export async function getMySubmittedRequests(userId: string) {
     return [];
   }
 
-  const { data, error } = await supabase
+  // Get requests by this user
+  const { data: requests, error } = await supabase
     .from('approval_requests')
-    .select(`
-      *,
-      requester:user_profiles!requester_id(id, name, email, avatar_url),
-      steps:approval_steps(
-        *,
-        approver:user_profiles!approver_id(id, name, email, avatar_url)
-      )
-    `)
+    .select('*')
     .eq('organization_id', orgId)
     .eq('requester_id', userId)
     .order('created_at', { ascending: false });
@@ -134,8 +159,46 @@ export async function getMySubmittedRequests(userId: string) {
     return [];
   }
 
-  console.log('My submitted requests:', data?.length, 'for user:', userId);
-  return data || [];
+  if (!requests || requests.length === 0) {
+    console.log('My submitted requests: 0 for user:', userId);
+    return [];
+  }
+
+  console.log('My submitted requests:', requests.length, 'for user:', userId);
+
+  // Get requester profile
+  const { data: requester } = await supabase
+    .from('user_profiles')
+    .select('id, name, email, avatar_url')
+    .eq('id', userId)
+    .single();
+
+  // Get steps for these requests
+  const requestIds = requests.map(r => r.id);
+  const { data: steps } = await supabase
+    .from('approval_steps')
+    .select('*')
+    .in('request_id', requestIds);
+
+  // Get approver profiles
+  const approverIds = [...new Set((steps || []).map(s => s.approver_id))];
+  const { data: approvers } = await supabase
+    .from('user_profiles')
+    .select('id, name, email, avatar_url')
+    .in('id', approverIds);
+
+  const approverMap = new Map((approvers || []).map(p => [p.id, p]));
+
+  return requests.map(request => ({
+    ...request,
+    requester,
+    steps: (steps || [])
+      .filter(s => s.request_id === request.id)
+      .map(step => ({
+        ...step,
+        approver: approverMap.get(step.approver_id)
+      }))
+  }));
 }
 
 /**
@@ -169,17 +232,10 @@ export async function getPendingApprovalsForUser(userId: string) {
   // Get the unique request IDs
   const requestIds = Array.from(new Set(pendingSteps.map(s => s.request_id)));
 
-  // Fetch the full requests with all their steps
-  const { data, error } = await supabase
+  // Fetch the requests
+  const { data: requests, error } = await supabase
     .from('approval_requests')
-    .select(`
-      *,
-      requester:user_profiles!requester_id(id, name, email, avatar_url),
-      steps:approval_steps(
-        *,
-        approver:user_profiles!approver_id(id, name, email, avatar_url)
-      )
-    `)
+    .select('*')
     .eq('organization_id', orgId)
     .in('id', requestIds)
     .order('created_at', { ascending: false });
@@ -189,14 +245,50 @@ export async function getPendingApprovalsForUser(userId: string) {
     return [];
   }
 
+  if (!requests || requests.length === 0) {
+    return [];
+  }
+
+  // Get requester profiles
+  const requesterIds = [...new Set(requests.map(r => r.requester_id))];
+  const { data: requesters } = await supabase
+    .from('user_profiles')
+    .select('id, name, email, avatar_url')
+    .in('id', requesterIds);
+
+  // Get all steps for these requests
+  const { data: allSteps } = await supabase
+    .from('approval_steps')
+    .select('*')
+    .in('request_id', requestIds);
+
+  // Get approver profiles
+  const approverIds = [...new Set((allSteps || []).map(s => s.approver_id))];
+  const { data: approvers } = await supabase
+    .from('user_profiles')
+    .select('id, name, email, avatar_url')
+    .in('id', approverIds);
+
+  const requesterMap = new Map((requesters || []).map(p => [p.id, p]));
+  const approverMap = new Map((approvers || []).map(p => [p.id, p]));
+
+  const enrichedRequests = requests.map(request => ({
+    ...request,
+    requester: requesterMap.get(request.requester_id),
+    steps: (allSteps || [])
+      .filter(s => s.request_id === request.id)
+      .map(step => ({
+        ...step,
+        approver: approverMap.get(step.approver_id)
+      }))
+  }));
+
   // Filter to only include requests where the user has a pending step
-  const filtered = (data || []).filter(request => {
+  return enrichedRequests.filter(request => {
     return request.steps?.some((step: { approver_id: string; status: string }) =>
       step.approver_id === userId && step.status === 'pending'
     );
   });
-
-  return filtered;
 }
 
 /**
