@@ -15,26 +15,60 @@ export async function getRequests() {
     return [];
   }
 
-  const { data, error } = await supabase
+  // First, get all requests
+  const { data: requests, error: requestError } = await supabase
     .from('approval_requests')
-    .select(`
-      *,
-      requester:user_profiles!requester_id(id, name, email, avatar_url),
-      steps:approval_steps(
-        *,
-        approver:user_profiles!approver_id(id, name, email, avatar_url)
-      )
-    `)
+    .select('*')
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('getRequests - Error fetching requests:', error);
+  if (requestError) {
+    console.error('getRequests - Error fetching requests:', requestError);
     return [];
   }
 
-  console.log('getRequests - Found', data?.length || 0, 'requests');
-  return data || [];
+  if (!requests || requests.length === 0) {
+    console.log('getRequests - Found 0 requests');
+    return [];
+  }
+
+  console.log('getRequests - Found', requests.length, 'requests');
+
+  // Get all user profiles for requesters
+  const requesterIds = [...new Set(requests.map(r => r.requester_id))];
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, name, email, avatar_url')
+    .in('id', requesterIds);
+
+  // Get all steps for these requests
+  const requestIds = requests.map(r => r.id);
+  const { data: steps } = await supabase
+    .from('approval_steps')
+    .select('*')
+    .in('request_id', requestIds);
+
+  // Get approver profiles
+  const approverIds = [...new Set((steps || []).map(s => s.approver_id))];
+  const { data: approverProfiles } = await supabase
+    .from('user_profiles')
+    .select('id, name, email, avatar_url')
+    .in('id', approverIds);
+
+  // Combine the data
+  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+  const approverMap = new Map((approverProfiles || []).map(p => [p.id, p]));
+
+  return requests.map(request => ({
+    ...request,
+    requester: profileMap.get(request.requester_id),
+    steps: (steps || [])
+      .filter(s => s.request_id === request.id)
+      .map(step => ({
+        ...step,
+        approver: approverMap.get(step.approver_id)
+      }))
+  }));
 }
 
 /**
