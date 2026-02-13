@@ -35,7 +35,7 @@ export async function getRequests() {
   console.log('getRequests - Found', requests.length, 'requests');
 
   // Get all user profiles for requesters
-  const requesterIds = [...new Set(requests.map(r => r.requester_id))];
+  const requesterIds = Array.from(new Set(requests.map(r => r.requester_id)));
   const { data: profiles } = await supabase
     .from('user_profiles')
     .select('id, name, email, avatar_url')
@@ -110,7 +110,7 @@ export async function getRequest(id: string) {
 
   // Get approver profiles
   if (steps && steps.length > 0) {
-    const approverIds = [...new Set(steps.map(s => s.approver_id))];
+    const approverIds = Array.from(new Set(steps.map(s => s.approver_id)));
     const { data: approvers } = await supabase
       .from('user_profiles')
       .select('id, name, email, avatar_url')
@@ -181,7 +181,7 @@ export async function getMySubmittedRequests(userId: string) {
     .in('request_id', requestIds);
 
   // Get approver profiles
-  const approverIds = [...new Set((steps || []).map(s => s.approver_id))];
+  const approverIds = Array.from(new Set((steps || []).map(s => s.approver_id)));
   const { data: approvers } = await supabase
     .from('user_profiles')
     .select('id, name, email, avatar_url')
@@ -250,7 +250,7 @@ export async function getPendingApprovalsForUser(userId: string) {
   }
 
   // Get requester profiles
-  const requesterIds = [...new Set(requests.map(r => r.requester_id))];
+  const requesterIds = Array.from(new Set(requests.map(r => r.requester_id)));
   const { data: requesters } = await supabase
     .from('user_profiles')
     .select('id, name, email, avatar_url')
@@ -263,7 +263,7 @@ export async function getPendingApprovalsForUser(userId: string) {
     .in('request_id', requestIds);
 
   // Get approver profiles
-  const approverIds = [...new Set((allSteps || []).map(s => s.approver_id))];
+  const approverIds = Array.from(new Set((allSteps || []).map(s => s.approver_id)));
   const { data: approvers } = await supabase
     .from('user_profiles')
     .select('id, name, email, avatar_url')
