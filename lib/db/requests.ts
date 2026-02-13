@@ -49,7 +49,7 @@ export async function getRequests() {
     .in('request_id', requestIds);
 
   // Get approver profiles
-  const approverIds = [...new Set((steps || []).map(s => s.approver_id))];
+  const approverIds = Array.from(new Set((steps || []).map(s => s.approver_id)));
   const { data: approverProfiles } = await supabase
     .from('user_profiles')
     .select('id, name, email, avatar_url')
