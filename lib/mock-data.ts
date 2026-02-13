@@ -50,8 +50,8 @@ export const mockTemplates: ApprovalTemplate[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     steps: [
-      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
-      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+      { id: "ts1", template_id: "1", step_name: "Sales Manager Approval", step_order: 1, approver_role: "Sales Manager", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts2", template_id: "1", step_name: "VP Sales Approval", step_order: 2, approver_role: "VP of Sales", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() }
     ],
     usage_count: 42,
     avg_approval_time_hours: 8
@@ -67,10 +67,10 @@ export const mockTemplates: ApprovalTemplate[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     steps: [
-      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
-      { name: "VP Sales Approval", approver_role: "VP of Sales" },
-      { name: "Legal Review", approver_role: "Legal" },
-      { name: "Finance Approval", approver_role: "CFO" }
+      { id: "ts3", template_id: "2", step_name: "Sales Manager Approval", step_order: 1, approver_role: "Sales Manager", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts4", template_id: "2", step_name: "VP Sales Approval", step_order: 2, approver_role: "VP of Sales", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts5", template_id: "2", step_name: "Legal Review", step_order: 3, approver_role: "Legal", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts6", template_id: "2", step_name: "Finance Approval", step_order: 4, approver_role: "CFO", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() }
     ],
     usage_count: 18,
     avg_approval_time_hours: 24
@@ -86,7 +86,7 @@ export const mockTemplates: ApprovalTemplate[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     steps: [
-      { name: "Sales Manager Approval", approver_role: "Sales Manager" }
+      { id: "ts7", template_id: "3", step_name: "Sales Manager Approval", step_order: 1, approver_role: "Sales Manager", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() }
     ],
     usage_count: 127,
     avg_approval_time_hours: 4
@@ -102,9 +102,9 @@ export const mockTemplates: ApprovalTemplate[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     steps: [
-      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
-      { name: "Legal Review", approver_role: "Legal" },
-      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+      { id: "ts8", template_id: "4", step_name: "Sales Manager Approval", step_order: 1, approver_role: "Sales Manager", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts9", template_id: "4", step_name: "Legal Review", step_order: 2, approver_role: "Legal", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts10", template_id: "4", step_name: "VP Sales Approval", step_order: 3, approver_role: "VP of Sales", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() }
     ],
     usage_count: 31,
     avg_approval_time_hours: 16
@@ -120,8 +120,8 @@ export const mockTemplates: ApprovalTemplate[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     steps: [
-      { name: "Channel Manager Approval", approver_role: "Channel Manager" },
-      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+      { id: "ts11", template_id: "5", step_name: "Channel Manager Approval", step_order: 1, approver_role: "Channel Manager", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts12", template_id: "5", step_name: "VP Sales Approval", step_order: 2, approver_role: "VP of Sales", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() }
     ],
     usage_count: 23,
     avg_approval_time_hours: 12
@@ -137,10 +137,10 @@ export const mockTemplates: ApprovalTemplate[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     steps: [
-      { name: "Sales Manager Approval", approver_role: "Sales Manager" },
-      { name: "Security Review", approver_role: "Security Officer" },
-      { name: "Compliance Review", approver_role: "Compliance" },
-      { name: "VP Sales Approval", approver_role: "VP of Sales" }
+      { id: "ts13", template_id: "6", step_name: "Sales Manager Approval", step_order: 1, approver_role: "Sales Manager", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts14", template_id: "6", step_name: "Security Review", step_order: 2, approver_role: "Security Officer", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts15", template_id: "6", step_name: "Compliance Review", step_order: 3, approver_role: "Compliance", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() },
+      { id: "ts16", template_id: "6", step_name: "VP Sales Approval", step_order: 4, approver_role: "VP of Sales", execution_type: "sequential" as const, is_required: true, created_at: new Date().toISOString() }
     ],
     usage_count: 7,
     avg_approval_time_hours: 36
