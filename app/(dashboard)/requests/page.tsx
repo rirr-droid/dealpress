@@ -13,6 +13,13 @@ export default async function RequestsPage() {
   const requests = await getRequests();
   const templates = await getActiveTemplates();
 
+  // Debug: Show what we got
+  if (requests.length === 0) {
+    console.log('DEBUG: No requests found');
+  } else {
+    console.log('DEBUG: Found', requests.length, 'requests');
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -61,8 +68,11 @@ export default async function RequestsPage() {
       <div className="space-y-4">
         {requests.length === 0 ? (
           <Card className="p-12 text-center rounded-[18px] border border-gray-200">
-            <h3 className="text-lg font-semibold text-[#1d1d1f] mb-2">No requests yet</h3>
-            <p className="text-[#86868b] mb-4">Create your first approval request to get started</p>
+            <h3 className="text-lg font-semibold text-[#1d1d1f] mb-2">No requests found</h3>
+            <p className="text-[#86868b] mb-4">
+              There are {requests.length} requests loaded. This might be a data issue.
+            </p>
+            <p className="text-xs text-[#86868b] mb-4">Check Vercel logs for errors</p>
             <CreateRequestDialog templates={templates} />
           </Card>
         ) : (

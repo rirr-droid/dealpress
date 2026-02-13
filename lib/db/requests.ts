@@ -8,7 +8,10 @@ export async function getRequests() {
   const supabase = await createClient();
   const orgId = await getUserOrgId();
 
+  console.log('getRequests - orgId:', orgId);
+
   if (!orgId) {
+    console.error('getRequests - No orgId found!');
     return [];
   }
 
@@ -26,10 +29,11 @@ export async function getRequests() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching requests:', error);
+    console.error('getRequests - Error fetching requests:', error);
     return [];
   }
 
+  console.log('getRequests - Found', data?.length || 0, 'requests');
   return data || [];
 }
 
