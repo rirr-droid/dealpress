@@ -25,14 +25,17 @@ export default function SignupPage() {
 
     try {
       console.log('Starting signup with:', { email, name, companyName });
-      console.log('Creating Supabase client...');
 
-      const supabase = createClient();
-      console.log('Client created successfully');
+      // Use direct import instead of createClient() helper
+      const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
 
-      // Create user account
+      const supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
       console.log('Calling signUp...');
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -43,13 +46,11 @@ export default function SignupPage() {
         },
       });
 
-      console.log('Signup response:', { data: authData, error: authError });
+      console.log('Response:', { data, error });
 
-      if (authError) throw authError;
+      if (error) throw error;
 
-      if (authData.user) {
-        // User created successfully
-        // The database trigger will handle creating the org and profile
+      if (data.user) {
         router.push("/dashboard");
         router.refresh();
       }
