@@ -161,6 +161,7 @@ export async function createRequest(input: CreateRequestInput) {
     // Revalidate pages
     revalidatePath('/dashboard');
     revalidatePath('/requests');
+    revalidatePath(`/requests/${request.id}`);
 
     return { success: true, data: request };
   } catch (error) {

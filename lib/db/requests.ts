@@ -67,6 +67,40 @@ export async function getRequest(id: string) {
 }
 
 /**
+ * Get requests submitted by a specific user
+ */
+export async function getMySubmittedRequests(userId: string) {
+  const supabase = await createClient();
+  const orgId = await getUserOrgId();
+
+  if (!orgId) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('approval_requests')
+    .select(`
+      *,
+      requester:requester_id(id, name, email, avatar_url),
+      steps:approval_steps(
+        *,
+        approver:approver_id(id, name, email, avatar_url)
+      )
+    `)
+    .eq('organization_id', orgId)
+    .eq('requester_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching submitted requests:', error);
+    return [];
+  }
+
+  console.log('My submitted requests:', data?.length, 'for user:', userId);
+  return data || [];
+}
+
+/**
  * Get pending approvals for a specific user
  */
 export async function getPendingApprovalsForUser(userId: string) {
@@ -77,20 +111,39 @@ export async function getPendingApprovalsForUser(userId: string) {
     return [];
   }
 
-  // Get all requests where user has a pending step
+  // Get all approval steps that are pending for this user
+  const { data: pendingSteps, error: stepsError } = await supabase
+    .from('approval_steps')
+    .select('request_id')
+    .eq('approver_id', userId)
+    .eq('status', 'pending');
+
+  if (stepsError) {
+    console.error('Error fetching pending steps:', stepsError);
+    return [];
+  }
+
+  // If no pending steps, return empty array
+  if (!pendingSteps || pendingSteps.length === 0) {
+    return [];
+  }
+
+  // Get the unique request IDs
+  const requestIds = [...new Set(pendingSteps.map(s => s.request_id))];
+
+  // Fetch the full requests with all their steps
   const { data, error } = await supabase
     .from('approval_requests')
     .select(`
       *,
       requester:requester_id(id, name, email, avatar_url),
-      steps:approval_steps!inner(
+      steps:approval_steps(
         *,
         approver:approver_id(id, name, email, avatar_url)
       )
     `)
     .eq('organization_id', orgId)
-    .eq('steps.approver_id', userId)
-    .eq('steps.status', 'pending')
+    .in('id', requestIds)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -98,7 +151,14 @@ export async function getPendingApprovalsForUser(userId: string) {
     return [];
   }
 
-  return data || [];
+  // Filter to only include requests where the user has a pending step
+  const filtered = (data || []).filter(request => {
+    return request.steps?.some((step: { approver_id: string; status: string }) =>
+      step.approver_id === userId && step.status === 'pending'
+    );
+  });
+
+  return filtered;
 }
 
 /**

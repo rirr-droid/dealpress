@@ -96,10 +96,12 @@ export default function CreateRequestDialog({ templates, trigger }: CreateReques
         });
         resetForm();
         setOpen(false);
-        router.refresh();
-        // Optionally navigate to the new request
+        // Navigate to the new request detail page after a brief delay
+        // to ensure cache revalidation completes
         if (result.data?.id) {
-          router.push(`/requests/${result.data.id}`);
+          setTimeout(() => {
+            router.push(`/requests/${result.data.id}`);
+          }, 100);
         }
       } else {
         // Check if it's a usage limit error

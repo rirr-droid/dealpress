@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getRequests, getPendingApprovalsForUser, getDashboardMetrics, getCurrentStepName } from "@/lib/db/requests";
+import { getRequests, getPendingApprovalsForUser, getMySubmittedRequests, getDashboardMetrics, getCurrentStepName } from "@/lib/db/requests";
 import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 import { Clock, CheckCircle, TrendingUp, FileText } from "lucide-react";
@@ -18,7 +18,15 @@ export default async function DashboardPage() {
 
   const requests = await getRequests();
   const myPendingApprovals = await getPendingApprovalsForUser(user.id);
+  const mySubmittedRequests = await getMySubmittedRequests(user.id);
   const metrics = await getDashboardMetrics();
+
+  console.log('Dashboard data:', {
+    totalRequests: requests.length,
+    myPendingApprovals: myPendingApprovals.length,
+    mySubmittedRequests: mySubmittedRequests.length,
+    userId: user.id,
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -117,7 +125,11 @@ export default async function DashboardPage() {
         ) : (
           <div className="space-y-4">
             {myPendingApprovals.map((request) => {
-              const currentStepName = getCurrentStepName(request);
+              // Find the user's specific pending step
+              const myPendingStep = request.steps?.find(
+                (step: { approver_id: string; status: string }) =>
+                  step.approver_id === user.id && step.status === 'pending'
+              );
 
               return (
                 <Link key={request.id} href={`/requests/${request.id}`}>
@@ -139,7 +151,11 @@ export default async function DashboardPage() {
                               <span>•</span>
                             </>
                           )}
-                          {currentStepName && <span>{currentStepName}</span>}
+                          {myPendingStep && (
+                            <span className="font-medium text-[#0071e3]">
+                              {(myPendingStep as { step_name: string }).step_name}
+                            </span>
+                          )}
                         </div>
                         {request.reason && (
                           <p className="text-sm text-[#86868b] mb-3">{request.reason}</p>
@@ -162,6 +178,70 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* My Submitted Requests */}
+      <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-[#1d1d1f]">My Submitted Requests</h2>
+            <Link href="/requests">
+              <Button variant="outline" className="rounded-full">
+                View All
+              </Button>
+            </Link>
+          </div>
+
+          {mySubmittedRequests.length === 0 ? (
+            <Card className="p-12 text-center rounded-[18px] border border-gray-200">
+              <p className="text-[#86868b]">You haven't submitted any requests yet.</p>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {mySubmittedRequests.map((request) => {
+              const currentStepName = getCurrentStepName(request);
+
+              return (
+                <Link key={request.id} href={`/requests/${request.id}`}>
+                  <Card className={`p-6 rounded-[18px] border-l-4 hover:shadow-md transition-all cursor-pointer ${getPriorityColor(request.priority)}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-[#1d1d1f]">
+                            {request.deal_name}
+                          </h3>
+                          {getStatusBadge(request.status)}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-[#86868b] mb-3">
+                          {request.deal_amount && (
+                            <>
+                              <span className="font-semibold text-[#1d1d1f]">
+                                ${request.deal_amount.toLocaleString()}
+                              </span>
+                              <span>•</span>
+                            </>
+                          )}
+                          {currentStepName && <span>Currently at: {currentStepName}</span>}
+                        </div>
+                        {request.reason && (
+                          <p className="text-sm text-[#86868b] mb-3">{request.reason}</p>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-[#ff9500]" />
+                          <p className="text-xs text-[#86868b]">
+                            Submitted {request.submitted_at && new Date(request.submitted_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full">
+                        Track Progress
+                      </Button>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
+            </div>
+          )}
+        </div>
 
       {/* Recent Activity */}
       <div>
