@@ -24,36 +24,36 @@ export default function SignupPage() {
     setError(null);
 
     try {
-      console.log('Starting signup with:', { email, name, companyName });
+      console.log('Starting signup via API route');
 
-      // Use direct import instead of createClient() helper
-      const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
-
-      const supabase = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      console.log('Calling signUp...');
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-            company_name: companyName,
-          },
+      // Call server-side API route instead of client-side Supabase
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          companyName,
+        }),
       });
 
-      console.log('Response:', { data, error });
+      const data = await response.json();
 
-      if (error) throw error;
-
-      if (data.user) {
-        router.push("/dashboard");
-        router.refresh();
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed');
       }
+
+      console.log('Signup successful!', data);
+
+      // Sign in the user after successful signup
+      const supabase = createClient();
+      await supabase.auth.signInWithPassword({ email, password });
+
+      router.push("/dashboard");
+      router.refresh();
     } catch (error) {
       console.error('Signup error:', error);
       setError(error instanceof Error ? error.message : "Failed to create account");
