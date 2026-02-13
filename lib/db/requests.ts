@@ -129,7 +129,7 @@ export async function getPendingApprovalsForUser(userId: string) {
   }
 
   // Get the unique request IDs
-  const requestIds = [...new Set(pendingSteps.map(s => s.request_id))];
+  const requestIds = Array.from(new Set(pendingSteps.map(s => s.request_id)));
 
   // Fetch the full requests with all their steps
   const { data, error } = await supabase
