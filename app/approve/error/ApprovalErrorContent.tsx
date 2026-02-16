@@ -1,15 +1,11 @@
-import { Suspense } from 'react';
-import ApprovalErrorContent from './ApprovalErrorContent';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
-export default function ApprovalErrorPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ApprovalErrorContent />
-    </Suspense>
-  );
-}
+export default function ApprovalErrorContent() {
+  const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
   const stepId = searchParams.get('stepId');
   const status = searchParams.get('status');

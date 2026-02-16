@@ -1,15 +1,11 @@
-import { Suspense } from 'react';
-import RejectContent from './RejectContent';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
-export default function RejectPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <RejectContent />
-    </Suspense>
-  );
-}
+export default function RejectContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [comments, setComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -1,15 +1,11 @@
-import { Suspense } from 'react';
-import ApprovalSuccessContent from './ApprovalSuccessContent';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
-export default function ApprovalSuccessPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ApprovalSuccessContent />
-    </Suspense>
-  );
-}
+export default function ApprovalSuccessContent() {
+  const searchParams = useSearchParams();
   const dealName = searchParams.get('dealName') || 'Request';
   const requestId = searchParams.get('requestId');
   const allApproved = searchParams.get('allApproved') === 'true';
