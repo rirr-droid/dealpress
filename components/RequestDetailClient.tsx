@@ -4,11 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { approveStep, rejectStep } from "@/app/actions/approvals";
 import { generateShareLink, revokeShareLink } from "@/app/actions/share";
+import { cancelRequest } from "@/app/actions/requests";
 import ApprovalTracker from "@/components/ApprovalTracker";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ExternalLink, Share2, Copy, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, ExternalLink, Share2, Copy, Trash2, Eye, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -43,6 +44,10 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+
+  // Cancel request state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const handleApprove = (stepId: string) => {
     startTransition(async () => {
@@ -179,6 +184,31 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
     }
   };
 
+  // Handle cancel request
+  const handleCancelRequest = async () => {
+    if (!request.id) return;
+
+    startTransition(async () => {
+      const result = await cancelRequest(request.id, cancelReason.trim() || undefined);
+
+      if (result.success) {
+        setCancelDialogOpen(false);
+        setCancelReason("");
+        toast({
+          title: "Request cancelled",
+          description: "The approval request has been cancelled successfully",
+        });
+        router.refresh();
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to cancel request",
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
@@ -187,6 +217,8 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
         return "bg-[#ff3b30] text-white";
       case "pending":
         return "bg-[#ff9500] text-white";
+      case "cancelled":
+        return "bg-gray-500 text-white";
       default:
         return "bg-gray-200 text-[#1d1d1f]";
     }
@@ -230,7 +262,7 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
               </div>
             </div>
 
-            {/* Share Button */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-2">
               {request.share_token && (
                 <Badge variant="outline" className="text-xs">
@@ -247,6 +279,19 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
                 <Share2 className="w-4 h-4 mr-2" />
                 {isGeneratingLink ? "Generating..." : request.share_token ? "Share Link" : "Create Share Link"}
               </Button>
+
+              {/* Cancel Button - Only show for pending requests and if user is requester */}
+              {request.status === 'pending' && request.requester_id === currentUserId && (
+                <Button
+                  onClick={() => setCancelDialogOpen(true)}
+                  disabled={isPending}
+                  variant="outline"
+                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Cancel Request
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -414,6 +459,55 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
             >
               <Copy className="w-4 h-4 mr-2" />
               Copy Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Request Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="w-5 h-5" />
+              Cancel Approval Request
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this approval request? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="cancel-reason">Reason for Cancellation (Optional)</Label>
+              <Textarea
+                id="cancel-reason"
+                placeholder="Explain why you're cancelling this request..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <p className="text-sm text-[#86868b]">
+                This will be recorded in the audit log for future reference.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelDialogOpen(false);
+                setCancelReason("");
+              }}
+              disabled={isPending}
+            >
+              Keep Request
+            </Button>
+            <Button
+              onClick={handleCancelRequest}
+              disabled={isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isPending ? "Cancelling..." : "Cancel Request"}
             </Button>
           </DialogFooter>
         </DialogContent>

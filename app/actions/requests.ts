@@ -214,3 +214,101 @@ export async function updateRequest(id: string, updates: Partial<CreateRequestIn
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
+
+/**
+ * Cancel an approval request
+ * Only the requester or admins can cancel a request
+ */
+export async function cancelRequest(requestId: string, reason?: string) {
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
+    const orgId = await getUserOrgId();
+
+    if (!user || !orgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Get the request to check permissions
+    const { data: request, error: fetchError } = await supabase
+      .from('approval_requests')
+      .select('id, requester_id, status, deal_name, organization_id')
+      .eq('id', requestId)
+      .eq('organization_id', orgId)
+      .single();
+
+    if (fetchError || !request) {
+      return { success: false, error: 'Request not found' };
+    }
+
+    // Check if request can be cancelled
+    if (request.status === 'approved' || request.status === 'rejected') {
+      return { success: false, error: 'Cannot cancel a request that has already been approved or rejected' };
+    }
+
+    if (request.status === 'cancelled') {
+      return { success: false, error: 'Request is already cancelled' };
+    }
+
+    // Check permissions: only requester or admins can cancel
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', orgId)
+      .eq('user_id', user.id)
+      .single();
+
+    const isRequester = request.requester_id === user.id;
+    const isAdmin = membership?.role === 'admin';
+
+    if (!isRequester && !isAdmin) {
+      return { success: false, error: 'Only the requester or admins can cancel this request' };
+    }
+
+    // Update request status to cancelled
+    const { error: updateError } = await supabase
+      .from('approval_requests')
+      .update({
+        status: 'cancelled',
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .eq('organization_id', orgId);
+
+    if (updateError) {
+      console.error('Error cancelling request:', updateError);
+      return { success: false, error: 'Failed to cancel request' };
+    }
+
+    // Update all pending approval steps to cancelled
+    await supabase
+      .from('approval_steps')
+      .update({ status: 'cancelled' })
+      .eq('request_id', requestId)
+      .in('status', ['pending', 'not-started']);
+
+    // Create audit log
+    await supabase.from('audit_logs').insert({
+      organization_id: orgId,
+      user_id: user.id,
+      request_id: requestId,
+      action: 'request.cancelled',
+      metadata: {
+        deal_name: request.deal_name,
+        cancelled_by: user.id,
+        cancel_reason: reason || 'No reason provided'
+      },
+    });
+
+    // Revalidate pages
+    revalidatePath('/dashboard');
+    revalidatePath('/requests');
+    revalidatePath(`/requests/${requestId}`);
+
+    return { success: true, message: 'Request cancelled successfully' };
+  } catch (error) {
+    console.error('Error in cancelRequest:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
