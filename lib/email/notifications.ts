@@ -2,6 +2,7 @@ import { sendEmail } from './resend';
 import ApprovalNeededEmail from './templates/ApprovalNeeded';
 import RequestApprovedEmail from './templates/RequestApproved';
 import RequestRejectedEmail from './templates/RequestRejected';
+import TeamInvitationEmail from './templates/TeamInvitation';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -158,5 +159,34 @@ export async function sendStepApprovedEmail({
         <p style="color: #86868b; font-size: 14px; line-height: 20px;">DealPress - Deal approvals, made simple.</p>
       </div>
     `,
+  });
+}
+
+/**
+ * Send team invitation email
+ */
+export async function sendTeamInvitationEmail({
+  invitedEmail,
+  inviterName,
+  organizationName,
+  jobTitle,
+}: {
+  invitedEmail: string;
+  inviterName: string;
+  organizationName: string;
+  jobTitle?: string;
+}) {
+  const inviteUrl = `${APP_URL}/signup?email=${encodeURIComponent(invitedEmail)}`;
+
+  return await sendEmail({
+    to: invitedEmail,
+    subject: `You're invited to join ${organizationName} on DealPress`,
+    react: TeamInvitationEmail({
+      invitedEmail,
+      inviterName,
+      organizationName,
+      jobTitle,
+      inviteUrl,
+    }),
   });
 }

@@ -76,43 +76,63 @@ export async function getAnalytics(organizationId: string, days: number = 30): P
   // Calculate average approval time
   const { data: completedRequests } = await supabase
     .from('approval_requests')
-    .select('submitted_at, resolved_at')
+    .select('submitted_at, completed_at')
     .eq('organization_id', organizationId)
     .in('status', ['approved', 'rejected'])
-    .not('resolved_at', 'is', null)
+    .not('completed_at', 'is', null)
     .gte('submitted_at', startDate.toISOString());
 
   let averageApprovalTime = 0;
   if (completedRequests && completedRequests.length > 0) {
     const totalTime = completedRequests.reduce((sum, req) => {
       const submitted = new Date(req.submitted_at).getTime();
-      const resolved = new Date(req.resolved_at!).getTime();
-      return sum + (resolved - submitted);
+      const completed = new Date(req.completed_at!).getTime();
+      return sum + (completed - submitted);
     }, 0);
     averageApprovalTime = totalTime / completedRequests.length / (1000 * 60 * 60); // Convert to hours
   }
 
   // Get top approvers with their stats
-  const { data: approvalData } = await supabase
+  // First, get all request IDs for this organization
+  const { data: orgRequests } = await supabase
+    .from('approval_requests')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .gte('submitted_at', startDate.toISOString());
+
+  const requestIds = orgRequests?.map(r => r.id) || [];
+
+  // Then get approval steps for those requests
+  const { data: approvalData } = requestIds.length > 0 ? await supabase
     .from('approval_steps')
     .select(`
       approver_id,
       status,
       assigned_at,
-      acted_at,
-      user:approver_id(id, name)
+      acted_at
     `)
-    .eq('approval_requests.organization_id', organizationId)
+    .in('request_id', requestIds)
     .eq('status', 'approved')
     .not('acted_at', 'is', null)
-    .gte('assigned_at', startDate.toISOString());
+    .gte('assigned_at', startDate.toISOString())
+    : { data: [] };
+
+  // Get user profiles for approvers
+  const approverIds = Array.from(new Set(approvalData?.map(s => s.approver_id) || []));
+  const { data: approvers } = approverIds.length > 0 ? await supabase
+    .from('user_profiles')
+    .select('id, name')
+    .in('id', approverIds)
+    : { data: [] };
+
+  const approverProfileMap = new Map(approvers?.map(u => [u.id, u]) || []);
 
   // Process top approvers
   const approverMap = new Map<string, { name: string; count: number; totalTime: number }>();
 
   if (approvalData) {
-    approvalData.forEach((step: { approver_id: string; assigned_at: string; acted_at: string; user: { id: string; name: string } | { id: string; name: string }[] }) => {
-      const user = Array.isArray(step.user) ? step.user[0] : step.user;
+    approvalData.forEach((step: { approver_id: string; assigned_at: string; acted_at: string }) => {
+      const user = approverProfileMap.get(step.approver_id);
       if (!user) return;
 
       const existing = approverMap.get(step.approver_id) || {
@@ -193,16 +213,37 @@ export async function getTeamPerformance(organizationId: string, days: number = 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const { data: teamData } = await supabase
+  // First get all requests for this organization
+  const { data: orgRequests } = await supabase
+    .from('approval_requests')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .gte('submitted_at', startDate.toISOString());
+
+  const requestIds = orgRequests?.map(r => r.id) || [];
+
+  // Then get approval steps for those requests
+  const { data: teamData } = requestIds.length > 0 ? await supabase
     .from('approval_steps')
     .select(`
       approver_id,
       status,
       assigned_at,
-      acted_at,
-      user:approver_id(id, name, email)
+      acted_at
     `)
-    .gte('assigned_at', startDate.toISOString());
+    .in('request_id', requestIds)
+    .gte('assigned_at', startDate.toISOString())
+    : { data: [] };
+
+  // Get user profiles
+  const approverIds = Array.from(new Set(teamData?.map(s => s.approver_id) || []));
+  const { data: users } = approverIds.length > 0 ? await supabase
+    .from('user_profiles')
+    .select('id, name, email')
+    .in('id', approverIds)
+    : { data: [] };
+
+  const userProfileMap = new Map(users?.map(u => [u.id, u]) || []);
 
   const memberStats = new Map<string, {
     name: string;
@@ -220,9 +261,8 @@ export async function getTeamPerformance(organizationId: string, days: number = 
       status: string;
       assigned_at: string;
       acted_at: string | null;
-      user: { id: string; name: string; email: string } | { id: string; name: string; email: string }[];
     }) => {
-      const user = Array.isArray(step.user) ? step.user[0] : step.user;
+      const user = userProfileMap.get(step.approver_id);
       if (!user) return;
 
       const existing = memberStats.get(step.approver_id) || {

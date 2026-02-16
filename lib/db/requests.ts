@@ -8,8 +8,6 @@ export async function getRequests() {
   const supabase = await createClient();
   const orgId = await getUserOrgId();
 
-  console.log('getRequests - orgId:', orgId);
-
   if (!orgId) {
     console.error('getRequests - No orgId found!');
     return [];
@@ -28,11 +26,8 @@ export async function getRequests() {
   }
 
   if (!requests || requests.length === 0) {
-    console.log('getRequests - Found 0 requests');
     return [];
   }
-
-  console.log('getRequests - Found', requests.length, 'requests');
 
   // Get all user profiles for requesters
   const requesterIds = Array.from(new Set(requests.map(r => r.requester_id)));
@@ -160,11 +155,8 @@ export async function getMySubmittedRequests(userId: string) {
   }
 
   if (!requests || requests.length === 0) {
-    console.log('My submitted requests: 0 for user:', userId);
     return [];
   }
-
-  console.log('My submitted requests:', requests.length, 'for user:', userId);
 
   // Get requester profile
   const { data: requester } = await supabase
@@ -332,8 +324,24 @@ export async function getDashboardMetrics() {
     ? Math.round((approvedCount || 0) / totalRequests * 100)
     : 0;
 
-  // Get avg approval time (simplified - just return a default for now)
-  const avgApprovalTime = 18.5; // TODO: Calculate actual avg from completed requests
+  // Calculate average approval time from completed requests
+  const { data: completedRequests } = await supabase
+    .from('approval_requests')
+    .select('submitted_at, completed_at')
+    .eq('organization_id', orgId)
+    .in('status', ['approved', 'rejected'])
+    .not('completed_at', 'is', null);
+
+  let avgApprovalTime = 0;
+  if (completedRequests && completedRequests.length > 0) {
+    const totalTime = completedRequests.reduce((sum, req) => {
+      const submitted = new Date(req.submitted_at).getTime();
+      const completed = new Date(req.completed_at!).getTime();
+      return sum + (completed - submitted);
+    }, 0);
+    // Convert to hours and round to 1 decimal place
+    avgApprovalTime = Math.round((totalTime / completedRequests.length / (1000 * 60 * 60)) * 10) / 10;
+  }
 
   return {
     totalRequests: totalRequests || 0,

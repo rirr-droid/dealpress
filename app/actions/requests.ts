@@ -5,21 +5,22 @@ import { getCurrentUser, getUserOrgId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { canPerformAction } from "@/lib/billing/usage";
 import { sendApprovalNeededEmail } from "@/lib/email/notifications";
-
-interface CreateRequestInput {
-  deal_name: string;
-  deal_amount?: number;
-  deal_url?: string;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  reason?: string;
-  template_id?: string;
-}
+import { createRequestSchema, CreateRequestInput } from "@/lib/validations";
 
 /**
  * Create a new approval request
  */
 export async function createRequest(input: CreateRequestInput) {
   try {
+    // Validate input
+    const validation = createRequestSchema.safeParse(input);
+    if (!validation.success) {
+      const errors = validation.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+      return { success: false, error: errors };
+    }
+
+    const validatedInput = validation.data;
+
     const supabase = await createClient();
     const user = await getCurrentUser();
     const orgId = await getUserOrgId();
@@ -42,11 +43,11 @@ export async function createRequest(input: CreateRequestInput) {
     }
 
     let templateSteps: TemplateStep[] = [];
-    if (input.template_id) {
+    if (validatedInput.template_id) {
       const { data: template } = await supabase
         .from('approval_templates')
         .select('*, steps:template_steps(*)')
-        .eq('id', input.template_id)
+        .eq('id', validatedInput.template_id)
         .single();
 
       if (template?.steps) {
@@ -59,12 +60,12 @@ export async function createRequest(input: CreateRequestInput) {
       .from('approval_requests')
       .insert({
         organization_id: orgId,
-        template_id: input.template_id || null,
-        deal_name: input.deal_name,
-        deal_amount: input.deal_amount || null,
-        deal_url: input.deal_url || null,
-        priority: input.priority,
-        reason: input.reason || null,
+        template_id: validatedInput.template_id || null,
+        deal_name: validatedInput.deal_name,
+        deal_amount: validatedInput.deal_amount || null,
+        deal_url: validatedInput.deal_url || null,
+        priority: validatedInput.priority,
+        reason: validatedInput.reason || null,
         status: 'pending',
         requester_id: user.id,
         submitted_at: new Date().toISOString(),
@@ -135,16 +136,21 @@ export async function createRequest(input: CreateRequestInput) {
 
           const requesterName = requesterProfile?.name || user.email!;
 
-          await sendApprovalNeededEmail({
-            approverEmail: firstApprover.email,
-            approverName: firstApprover.name,
-            requesterName,
-            dealName: input.deal_name,
-            dealAmount: input.deal_amount,
-            reason: input.reason,
-            stepName: firstStep.step_name,
-            requestId: request.id,
-          });
+          try {
+            await sendApprovalNeededEmail({
+              approverEmail: firstApprover.email,
+              approverName: firstApprover.name,
+              requesterName,
+              dealName: validatedInput.deal_name,
+              dealAmount: validatedInput.deal_amount,
+              reason: validatedInput.reason,
+              stepName: firstStep.step_name,
+              requestId: request.id,
+            });
+          } catch (emailError) {
+            console.error('Failed to send approval needed email:', emailError);
+            // Don't fail the request creation if email fails
+          }
         }
       }
     }
@@ -155,7 +161,7 @@ export async function createRequest(input: CreateRequestInput) {
       user_id: user.id,
       request_id: request.id,
       action: 'request.created',
-      metadata: { deal_name: input.deal_name, template_id: input.template_id },
+      metadata: { deal_name: validatedInput.deal_name, template_id: validatedInput.template_id },
     });
 
     // Revalidate pages

@@ -5,6 +5,7 @@ import { getCurrentUser, getUserOrgId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/db/team";
 import { canPerformAction } from "@/lib/billing/usage";
+import { sendTeamInvitationEmail } from "@/lib/email/notifications";
 
 /**
  * Invite a user to the organization
@@ -31,9 +32,35 @@ export async function inviteUser(email: string, jobTitle?: string) {
       return { success: false, error: reason, errorCode: 'USAGE_LIMIT_REACHED' };
     }
 
-    // TODO: In production, this would send an invitation email
-    // For now, we'll just log it
-    console.log(`Invitation would be sent to ${email}`);
+    // Get organization details for the email
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', orgId)
+      .single();
+
+    // Get inviter profile for name
+    const { data: inviterProfile } = await supabase
+      .from('user_profiles')
+      .select('name')
+      .eq('id', user.id)
+      .single();
+
+    const inviterName = inviterProfile?.name || user.email!;
+    const organizationName = org?.name || 'Your Organization';
+
+    // Send invitation email
+    try {
+      await sendTeamInvitationEmail({
+        invitedEmail: email,
+        inviterName,
+        organizationName,
+        jobTitle,
+      });
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      // Don't fail the invitation if email fails - log it for audit
+    }
 
     // Create audit log
     await supabase.from('audit_logs').insert({
@@ -47,7 +74,7 @@ export async function inviteUser(email: string, jobTitle?: string) {
 
     return {
       success: true,
-      message: 'Invitation sent! (In production, an email would be sent)',
+      message: `Invitation sent to ${email}`,
     };
   } catch (error) {
     console.error('Error inviting user:', error);

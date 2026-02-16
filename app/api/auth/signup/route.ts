@@ -1,12 +1,48 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { signupSchema } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password, name, companyName } = body;
+    // Apply rate limiting: 5 signups per IP per hour
+    const clientIp = getClientIp(request);
+    const rateLimitResult = rateLimit(`signup:${clientIp}`, {
+      limit: 5,
+      window: 60 * 60 * 1000, // 1 hour
+    });
 
-    console.log('Server-side signup for:', email);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many signup attempts. Please try again later.',
+          retryAfter: Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.reset - Date.now()) / 1000)),
+            'X-RateLimit-Limit': String(rateLimitResult.limit),
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': String(rateLimitResult.reset),
+          }
+        }
+      );
+    }
+
+    const body = await request.json();
+
+    // Validate input with Zod
+    const validation = signupSchema.safeParse(body);
+    if (!validation.success) {
+      const errors = validation.error.issues.map(issue => issue.message).join(', ');
+      return NextResponse.json(
+        { error: errors },
+        { status: 400 }
+      );
+    }
+
+    const { email, password, name, companyName } = validation.data;
 
     // Create admin client using service role key (server-side only)
     const supabase = createClient(
@@ -32,11 +68,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Signup error:', error);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-
-    console.log('User created successfully:', data.user.id);
 
     return NextResponse.json({
       success: true,
@@ -47,7 +80,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Signup exception:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

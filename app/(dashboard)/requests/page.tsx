@@ -13,13 +13,6 @@ export default async function RequestsPage() {
   const requests = await getRequests();
   const templates = await getActiveTemplates();
 
-  // Debug: Show what we got
-  if (requests.length === 0) {
-    console.log('DEBUG: No requests found');
-  } else {
-    console.log('DEBUG: Found', requests.length, 'requests');
-  }
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":

@@ -24,8 +24,6 @@ export default function SignupPage() {
     setError(null);
 
     try {
-      console.log('Starting signup via API route');
-
       // Call server-side API route instead of client-side Supabase
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -45,8 +43,6 @@ export default function SignupPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Signup failed');
       }
-
-      console.log('Signup successful!', data);
 
       // Sign in the user after successful signup
       const supabase = createClient();

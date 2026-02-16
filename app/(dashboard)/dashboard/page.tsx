@@ -21,13 +21,6 @@ export default async function DashboardPage() {
   const mySubmittedRequests = await getMySubmittedRequests(user.id);
   const metrics = await getDashboardMetrics();
 
-  console.log('Dashboard data:', {
-    totalRequests: requests.length,
-    myPendingApprovals: myPendingApprovals.length,
-    mySubmittedRequests: mySubmittedRequests.length,
-    userId: user.id,
-  });
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":

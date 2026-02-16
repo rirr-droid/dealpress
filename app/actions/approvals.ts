@@ -64,7 +64,7 @@ export async function approveStep(stepId: string, comments?: string) {
 
     // If all approved, mark request as approved
     if (allApproved) {
-      await supabase
+      const { error: updateError } = await supabase
         .from('approval_requests')
         .update({
           status: 'approved',
@@ -72,38 +72,58 @@ export async function approveStep(stepId: string, comments?: string) {
         })
         .eq('id', step.request.id);
 
+      if (updateError) {
+        console.error('Error updating request status:', updateError);
+        return { success: false, error: 'Failed to update request status' };
+      }
+
       // Send final approval email to requester
       if (step.request.requester?.email) {
-        await sendRequestApprovedEmail({
-          requesterEmail: step.request.requester.email,
-          requesterName: step.request.requester.name,
-          approverName,
-          dealName: step.request.deal_name,
-          dealAmount: step.request.deal_amount || undefined,
-          comments: comments || undefined,
-          requestId: step.request.id,
-        });
+        try {
+          await sendRequestApprovedEmail({
+            requesterEmail: step.request.requester.email,
+            requesterName: step.request.requester.name,
+            approverName,
+            dealName: step.request.deal_name,
+            dealAmount: step.request.deal_amount || undefined,
+            comments: comments || undefined,
+            requestId: step.request.id,
+          });
+        } catch (emailError) {
+          console.error('Failed to send approval email:', emailError);
+          // Don't fail the approval if email fails
+        }
       }
     } else {
       // Move to next step
       const nextPendingStep = allSteps?.find(s => s.status === 'not-started');
       if (nextPendingStep) {
-        await supabase
+        const { error: nextStepError } = await supabase
           .from('approval_steps')
           .update({ status: 'pending', assigned_at: new Date().toISOString() })
           .eq('id', nextPendingStep.id);
 
+        if (nextStepError) {
+          console.error('Error updating next step:', nextStepError);
+          // Don't fail the approval, but log the issue
+        }
+
         // Send progress update to requester
         if (step.request.requester?.email) {
-          await sendStepApprovedEmail({
-            requesterEmail: step.request.requester.email,
-            requesterName: step.request.requester.name,
-            approverName,
-            dealName: step.request.deal_name,
-            stepName: step.step_name,
-            nextStepName: nextPendingStep.step_name,
-            requestId: step.request.id,
-          });
+          try {
+            await sendStepApprovedEmail({
+              requesterEmail: step.request.requester.email,
+              requesterName: step.request.requester.name,
+              approverName,
+              dealName: step.request.deal_name,
+              stepName: step.step_name,
+              nextStepName: nextPendingStep.step_name,
+              requestId: step.request.id,
+            });
+          } catch (emailError) {
+            console.error('Failed to send step approved email:', emailError);
+            // Don't fail the approval if email fails
+          }
         }
 
         // Send approval needed email to next approver
@@ -112,16 +132,21 @@ export async function approveStep(stepId: string, comments?: string) {
           : nextPendingStep.approver;
 
         if (nextApprover?.email) {
-          await sendApprovalNeededEmail({
-            approverEmail: nextApprover.email,
-            approverName: nextApprover.name,
-            requesterName: step.request.requester?.name || 'Someone',
-            dealName: step.request.deal_name,
-            dealAmount: step.request.deal_amount || undefined,
-            reason: step.request.reason || undefined,
-            stepName: nextPendingStep.step_name,
-            requestId: step.request.id,
-          });
+          try {
+            await sendApprovalNeededEmail({
+              approverEmail: nextApprover.email,
+              approverName: nextApprover.name,
+              requesterName: step.request.requester?.name || 'Someone',
+              dealName: step.request.deal_name,
+              dealAmount: step.request.deal_amount || undefined,
+              reason: step.request.reason || undefined,
+              stepName: nextPendingStep.step_name,
+              requestId: step.request.id,
+            });
+          } catch (emailError) {
+            console.error('Failed to send approval needed email:', emailError);
+            // Don't fail the approval if email fails
+          }
         }
       }
     }
@@ -186,13 +211,18 @@ export async function rejectStep(stepId: string, comments: string) {
     }
 
     // Mark entire request as rejected
-    await supabase
+    const { error: updateError } = await supabase
       .from('approval_requests')
       .update({
         status: 'rejected',
         completed_at: new Date().toISOString(),
       })
       .eq('id', step.request.id);
+
+    if (updateError) {
+      console.error('Error updating request status:', updateError);
+      return { success: false, error: 'Failed to update request status' };
+    }
 
     // Get approver profile for name
     const { data: approverProfile } = await supabase
@@ -205,15 +235,20 @@ export async function rejectStep(stepId: string, comments: string) {
 
     // Send rejection email to requester
     if (step.request.requester?.email) {
-      await sendRequestRejectedEmail({
-        requesterEmail: step.request.requester.email,
-        requesterName: step.request.requester.name,
-        approverName,
-        dealName: step.request.deal_name,
-        dealAmount: step.request.deal_amount || undefined,
-        comments,
-        requestId: step.request.id,
-      });
+      try {
+        await sendRequestRejectedEmail({
+          requesterEmail: step.request.requester.email,
+          requesterName: step.request.requester.name,
+          approverName,
+          dealName: step.request.deal_name,
+          dealAmount: step.request.deal_amount || undefined,
+          comments,
+          requestId: step.request.id,
+        });
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+        // Don't fail the rejection if email fails
+      }
     }
 
     // Create audit log
