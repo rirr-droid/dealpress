@@ -39,6 +39,7 @@ export async function approveStep(stepId: string, comments?: string) {
         status: 'approved',
         comments: comments || null,
         acted_at: new Date().toISOString(),
+        approved_via: 'web',
       })
       .eq('id', stepId)
       .eq('approver_id', user.id) // Ensure user is the approver
@@ -56,7 +57,7 @@ export async function approveStep(stepId: string, comments?: string) {
     // Check if all steps are now approved
     const { data: allSteps } = await supabase
       .from('approval_steps')
-      .select('id, status, step_order, step_name, approver:approver_id(name, email)')
+      .select('id, status, step_order, step_name, approver_id, approver:approver_id(name, email)')
       .eq('request_id', step.request.id)
       .order('step_order');
 
@@ -142,6 +143,8 @@ export async function approveStep(stepId: string, comments?: string) {
               reason: step.request.reason || undefined,
               stepName: nextPendingStep.step_name,
               requestId: step.request.id,
+              stepId: nextPendingStep.id,
+              approverId: nextPendingStep.approver_id,
             });
           } catch (emailError) {
             console.error('Failed to send approval needed email:', emailError);
@@ -196,6 +199,7 @@ export async function rejectStep(stepId: string, comments: string) {
         status: 'rejected',
         comments,
         acted_at: new Date().toISOString(),
+        approved_via: 'web',
       })
       .eq('id', stepId)
       .eq('approver_id', user.id) // Ensure user is the approver

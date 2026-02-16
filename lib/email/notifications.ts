@@ -3,6 +3,7 @@ import ApprovalNeededEmail from './templates/ApprovalNeeded';
 import RequestApprovedEmail from './templates/RequestApproved';
 import RequestRejectedEmail from './templates/RequestRejected';
 import TeamInvitationEmail from './templates/TeamInvitation';
+import { generateApprovalToken, generateRejectionToken } from '@/lib/auth/email-tokens';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -18,6 +19,8 @@ export async function sendApprovalNeededEmail({
   reason,
   stepName,
   requestId,
+  stepId,
+  approverId,
 }: {
   approverEmail: string;
   approverName: string;
@@ -27,8 +30,26 @@ export async function sendApprovalNeededEmail({
   reason?: string;
   stepName: string;
   requestId: string;
+  stepId?: string;
+  approverId?: string;
 }) {
   const requestUrl = `${APP_URL}/requests/${requestId}`;
+
+  // Generate one-click approval tokens if stepId and approverId are provided
+  let approveUrl: string | undefined;
+  let rejectUrl: string | undefined;
+
+  if (stepId && approverId) {
+    try {
+      const approveToken = generateApprovalToken(stepId, approverId, 'approve');
+      const rejectToken = generateRejectionToken(stepId, approverId);
+      approveUrl = `${APP_URL}/api/approve/${approveToken}`;
+      rejectUrl = `${APP_URL}/api/reject/${rejectToken}`;
+    } catch (error) {
+      console.error('Failed to generate approval tokens:', error);
+      // Continue without tokens - email will fall back to "Review Request" button
+    }
+  }
 
   return await sendEmail({
     to: approverEmail,
@@ -41,6 +62,8 @@ export async function sendApprovalNeededEmail({
       reason,
       stepName,
       requestUrl,
+      approveUrl,
+      rejectUrl,
     }),
   });
 }

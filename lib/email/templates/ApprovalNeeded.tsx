@@ -20,6 +20,8 @@ interface ApprovalNeededEmailProps {
   reason?: string;
   stepName: string;
   requestUrl: string;
+  approveUrl?: string;
+  rejectUrl?: string;
 }
 
 export const ApprovalNeededEmail = ({
@@ -30,6 +32,8 @@ export const ApprovalNeededEmail = ({
   reason = 'Major account, expedited approval needed for Q1 close',
   stepName = 'VP Approval',
   requestUrl = 'https://app.dealpress.com/requests/123',
+  approveUrl,
+  rejectUrl,
 }: ApprovalNeededEmailProps) => {
   return (
     <Html>
@@ -62,17 +66,34 @@ export const ApprovalNeededEmail = ({
             )}
           </Section>
 
-          <Section style={buttonContainer}>
-            <Button style={button} href={requestUrl}>
-              Review Request
-            </Button>
-          </Section>
+          {approveUrl && rejectUrl ? (
+            <>
+              <Section style={buttonContainer}>
+                <Button style={approveButton} href={approveUrl}>
+                  Approve Deal
+                </Button>
+              </Section>
+              <Section style={buttonContainer}>
+                <Button style={rejectButton} href={rejectUrl}>
+                  Reject
+                </Button>
+              </Section>
+              <Text style={orText}>or</Text>
+              <Section style={buttonContainer}>
+                <Button style={secondaryButton} href={requestUrl}>
+                  View Full Details
+                </Button>
+              </Section>
+            </>
+          ) : (
+            <Section style={buttonContainer}>
+              <Button style={button} href={requestUrl}>
+                Review Request
+              </Button>
+            </Section>
+          )}
 
           <Hr style={hr} />
-
-          <Text style={footer}>
-            You can also approve or reject directly from this email if one-click approvals are enabled in your settings.
-          </Text>
 
           <Text style={footer}>
             DealPress - Deal approvals, made simple.
@@ -172,6 +193,56 @@ const button = {
   textAlign: 'center' as const,
   display: 'inline-block',
   padding: '14px 32px',
+};
+
+const approveButton = {
+  backgroundColor: '#34c759',
+  borderRadius: '24px',
+  color: '#fff',
+  fontSize: '16px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'inline-block',
+  padding: '14px 40px',
+  width: '100%',
+  maxWidth: '280px',
+};
+
+const rejectButton = {
+  backgroundColor: '#ff3b30',
+  borderRadius: '24px',
+  color: '#fff',
+  fontSize: '16px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'inline-block',
+  padding: '14px 40px',
+  width: '100%',
+  maxWidth: '280px',
+  marginTop: '12px',
+};
+
+const secondaryButton = {
+  backgroundColor: 'transparent',
+  border: '2px solid #e5e5e5',
+  borderRadius: '24px',
+  color: '#1d1d1f',
+  fontSize: '14px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'inline-block',
+  padding: '12px 32px',
+  marginTop: '12px',
+};
+
+const orText = {
+  color: '#86868b',
+  fontSize: '14px',
+  textAlign: 'center' as const,
+  margin: '16px 0 8px',
 };
 
 const hr = {

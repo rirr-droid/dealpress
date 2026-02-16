@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { approveStep, rejectStep } from "@/app/actions/approvals";
+import { generateShareLink, revokeShareLink } from "@/app/actions/share";
 import ApprovalTracker from "@/components/ApprovalTracker";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Share2, Copy, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { ApprovalRequest } from "@/types";
 import type { StepComment } from "@/lib/db/comments";
 
@@ -36,6 +38,11 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [rejectComments, setRejectComments] = useState("");
+
+  // Share link state
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   const handleApprove = (stepId: string) => {
     startTransition(async () => {
@@ -95,6 +102,83 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
     });
   };
 
+  // Handle share link generation
+  const handleShareClick = async () => {
+    setIsGeneratingLink(true);
+
+    // Check if link already exists
+    if (request.share_token) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      setShareUrl(`${appUrl}/share/${request.share_token}`);
+      setShareDialogOpen(true);
+      setIsGeneratingLink(false);
+      return;
+    }
+
+    // Generate new share link
+    const result = await generateShareLink(request.id);
+
+    if (result.success && result.url) {
+      setShareUrl(result.url);
+      setShareDialogOpen(true);
+      toast({
+        title: "Share link generated",
+        description: "Anyone with this link can view the approval status.",
+      });
+      router.refresh();
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to generate share link",
+        variant: "destructive",
+      });
+    }
+
+    setIsGeneratingLink(false);
+  };
+
+  // Copy share link to clipboard
+  const handleCopyLink = async () => {
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Share link copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Please copy the link manually",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Revoke share link
+  const handleRevokeLink = async () => {
+    if (!request.id) return;
+
+    const result = await revokeShareLink(request.id);
+
+    if (result.success) {
+      setShareUrl(null);
+      setShareDialogOpen(false);
+      toast({
+        title: "Link revoked",
+        description: "The public share link has been disabled",
+      });
+      router.refresh();
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to revoke link",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
@@ -144,6 +228,25 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
                   {request.priority.toUpperCase()}
                 </Badge>
               </div>
+            </div>
+
+            {/* Share Button */}
+            <div className="flex items-center gap-2">
+              {request.share_token && (
+                <Badge variant="outline" className="text-xs">
+                  <Eye className="w-3 h-3 mr-1" />
+                  {request.share_view_count || 0} views
+                </Badge>
+              )}
+              <Button
+                onClick={handleShareClick}
+                disabled={isGeneratingLink}
+                variant="outline"
+                className="border-[#0071e3] text-[#0071e3] hover:bg-[#0071e3] hover:text-white"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                {isGeneratingLink ? "Generating..." : request.share_token ? "Share Link" : "Create Share Link"}
+              </Button>
             </div>
           </div>
         </div>
@@ -233,6 +336,84 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
               className="bg-[#ff3b30] hover:bg-[#ff2d20]"
             >
               {isPending ? "Rejecting..." : "Reject Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Link Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-[#0071e3]" />
+              Share Approval Request
+            </DialogTitle>
+            <DialogDescription>
+              Anyone with this link can view the approval status and timeline. Approver names and internal comments are hidden for privacy.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Share URL Input */}
+            <div className="space-y-2">
+              <Label htmlFor="share-url">Public Share Link</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="share-url"
+                  value={shareUrl || ""}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                <Button
+                  onClick={handleCopyLink}
+                  variant="outline"
+                  size="icon"
+                  className="flex-shrink-0"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            {request.share_view_count !== undefined && request.share_view_count > 0 && (
+              <div className="flex items-center gap-2 text-sm text-[#86868b] bg-gray-50 rounded-lg p-3">
+                <Eye className="w-4 h-4" />
+                <span>
+                  This link has been viewed {request.share_view_count} {request.share_view_count === 1 ? 'time' : 'times'}
+                </span>
+              </div>
+            )}
+
+            {/* Info Box */}
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <p className="text-sm text-[#1d1d1f] font-medium mb-2">What's shared publicly:</p>
+              <ul className="text-sm text-[#86868b] space-y-1">
+                <li>✓ Deal name and amount</li>
+                <li>✓ Approval status and timeline</li>
+                <li>✓ Requester name</li>
+                <li>✗ Approver names (hidden)</li>
+                <li>✗ Internal comments (hidden)</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              onClick={handleRevokeLink}
+              variant="outline"
+              className="border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30] hover:text-white w-full sm:w-auto"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Revoke Link
+            </Button>
+            <Button
+              onClick={handleCopyLink}
+              className="bg-[#0071e3] hover:bg-[#0077ed] w-full sm:w-auto"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy Link
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -111,13 +111,26 @@ Use these to evaluate every feature:
 - [x] Multi-step approval workflows
 - [x] Audit log
 - [x] Basic analytics dashboard
-- [ ] Email notifications
-- [ ] Slack notifications
+- [x] Email notifications (basic)
 - [ ] Template builder UI
+
+### v1.5 (PLG Features - Next 3 Weeks)
+**Focus:** Product-led growth features that create viral loops and reduce activation friction
+
+**Week 1 (Ship This Week):**
+- [ ] One-Click Email Approvals (ICE: 26) - 50% faster approval time
+- [ ] Public Shareable Request Links (ICE: 26) - Creates viral loop
+
+**Week 2-3 (Ship This Month):**
+- [ ] Analytics Export & Shareable Reports (ICE: 24) - Executive visibility
+- [ ] Slack Notifications + One-Click Approvals (ICE: 24) - 3x engagement boost
+
+**Impact:** +$2,040-$4,920 MRR in 90 days through activation, retention, and virality improvements
 
 ### v2 (Next 90 Days)
 - [ ] CRM integration (Salesforce first)
 - [ ] Auto-calculated margin
+- [ ] Auto-routing rules (ICE: 23)
 - [ ] SLA tracking
 - [ ] Deal approval heatmap
 - [ ] Admin rule builder UI
@@ -481,12 +494,18 @@ If any agent or developer encounters these, STOP and escalate:
 **Week of 2026-02-16:**
 1. ✅ Fix template management (DONE)
 2. ✅ Fix approval tracking (DONE)
-3. 🔄 Add email notifications
-4. 🔄 Add Slack notifications
-5. 🔄 Improve error handling
-6. 🔄 Add comprehensive testing
+3. ✅ PLG feature assessment (DONE)
+4. ✅ Write specs for top 4 PLG features (DONE)
+5. 🔄 **Ship Feature #1: One-Click Email Approvals** (P0, 4 hours)
+6. 🔄 **Ship Feature #2: Public Shareable Links** (P0, 3 hours)
 
-**Next Sprint:**
+**PLG Strategy (v1.5 Roadmap):**
+- **This Week:** Features #1 & #2 (activation + virality)
+- **Next 2 Weeks:** Analytics Export, then Slack Integration
+- **Goal:** Create viral loops, reduce friction, drive organic growth
+- **Projected Impact:** +$2,040-$4,920 MRR in 90 days
+
+**Backlog (Post-PLG):**
 1. CRM integration research
 2. Margin calculation engine
 3. SLA tracking

@@ -146,6 +146,8 @@ export async function createRequest(input: CreateRequestInput) {
               reason: validatedInput.reason,
               stepName: firstStep.step_name,
               requestId: request.id,
+              stepId: firstStep.id,
+              approverId: firstStep.approver_id,
             });
           } catch (emailError) {
             console.error('Failed to send approval needed email:', emailError);

@@ -72,6 +72,11 @@ export interface ApprovalRequest {
   created_at: string;
   updated_at: string;
 
+  // Public sharing
+  share_token?: string | null;
+  shared_at?: string | null;
+  share_view_count?: number;
+
   // Relations
   steps?: ApprovalStep[];
 }

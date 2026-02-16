@@ -362,3 +362,175 @@ export function getCurrentStepName(request: { steps?: Array<{ status: string; st
   const pendingStep = request.steps.find(s => s.status === 'pending');
   return pendingStep?.step_name;
 }
+
+/**
+ * Generate a public share link for a request
+ * Returns the existing token if one already exists
+ */
+export async function generateShareLink(requestId: string): Promise<{ success: boolean; token?: string; url?: string; error?: string }> {
+  const supabase = await createClient();
+  const orgId = await getUserOrgId();
+
+  if (!orgId) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // First check if request exists and belongs to this org
+  const { data: request, error: fetchError } = await supabase
+    .from('approval_requests')
+    .select('id, share_token, organization_id')
+    .eq('id', requestId)
+    .eq('organization_id', orgId)
+    .single();
+
+  if (fetchError || !request) {
+    return { success: false, error: 'Request not found' };
+  }
+
+  // If share token already exists, return it
+  if (request.share_token) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return {
+      success: true,
+      token: request.share_token,
+      url: `${appUrl}/share/${request.share_token}`
+    };
+  }
+
+  // Generate new UUID token
+  const token = crypto.randomUUID();
+
+  // Update request with share token and timestamp
+  const { error: updateError } = await supabase
+    .from('approval_requests')
+    .update({
+      share_token: token,
+      shared_at: new Date().toISOString()
+    })
+    .eq('id', requestId)
+    .eq('organization_id', orgId);
+
+  if (updateError) {
+    console.error('Error generating share link:', updateError);
+    return { success: false, error: 'Failed to generate share link' };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return {
+    success: true,
+    token,
+    url: `${appUrl}/share/${token}`
+  };
+}
+
+/**
+ * Revoke a public share link for a request
+ */
+export async function revokeShareLink(requestId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const orgId = await getUserOrgId();
+
+  if (!orgId) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { error } = await supabase
+    .from('approval_requests')
+    .update({
+      share_token: null,
+      shared_at: null,
+      share_view_count: 0
+    })
+    .eq('id', requestId)
+    .eq('organization_id', orgId);
+
+  if (error) {
+    console.error('Error revoking share link:', error);
+    return { success: false, error: 'Failed to revoke share link' };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Get a request by its share token (PUBLIC - no auth required)
+ * Returns sanitized data suitable for public viewing
+ */
+export async function getRequestByShareToken(token: string) {
+  const supabase = await createClient();
+
+  // Get the request by share token (no org filtering)
+  const { data: request, error: requestError } = await supabase
+    .from('approval_requests')
+    .select('*')
+    .eq('share_token', token)
+    .single();
+
+  if (requestError || !request) {
+    return null;
+  }
+
+  // Get requester profile (only name, no email for privacy)
+  const { data: requester } = await supabase
+    .from('user_profiles')
+    .select('id, name, avatar_url')
+    .eq('id', request.requester_id)
+    .single();
+
+  // Get steps (without approver details for privacy)
+  const { data: steps } = await supabase
+    .from('approval_steps')
+    .select('id, request_id, step_name, step_order, status, assigned_at, acted_at, created_at')
+    .eq('request_id', request.id)
+    .order('step_order', { ascending: true });
+
+  return {
+    id: request.id,
+    deal_name: request.deal_name,
+    deal_amount: request.deal_amount,
+    status: request.status,
+    priority: request.priority,
+    reason: request.reason,
+    submitted_at: request.submitted_at,
+    completed_at: request.completed_at,
+    created_at: request.created_at,
+    share_view_count: request.share_view_count,
+    requester: requester ? {
+      name: requester.name,
+      avatar_url: requester.avatar_url
+    } : null,
+    steps: steps || []
+  };
+}
+
+/**
+ * Increment the view count for a shared request
+ */
+export async function incrementShareViewCount(token: string): Promise<void> {
+  const supabase = await createClient();
+
+  // Use RPC or direct update with increment
+  await supabase
+    .from('approval_requests')
+    .update({
+      share_view_count: supabase.rpc('increment_share_view_count', { request_token: token })
+    })
+    .eq('share_token', token);
+
+  // Fallback: Simple increment using SQL
+  // Note: This is not atomic but works for MVP
+  const { data: request } = await supabase
+    .from('approval_requests')
+    .select('share_view_count')
+    .eq('share_token', token)
+    .single();
+
+  if (request) {
+    await supabase
+      .from('approval_requests')
+      .update({
+        share_view_count: (request.share_view_count || 0) + 1
+      })
+      .eq('share_token', token);
+  }
+}
