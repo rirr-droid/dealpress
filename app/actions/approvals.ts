@@ -57,7 +57,7 @@ export async function approveStep(stepId: string, comments?: string) {
     // Check if all steps are now approved
     const { data: allSteps } = await supabase
       .from('approval_steps')
-      .select('id, status, step_order, step_name, approver_id, approver:approver_id(name, email)')
+      .select('id, status, step_order, step_name, approver_id')
       .eq('request_id', step.request.id)
       .order('step_order');
 
@@ -128,15 +128,18 @@ export async function approveStep(stepId: string, comments?: string) {
         }
 
         // Send approval needed email to next approver
-        const nextApprover = Array.isArray(nextPendingStep.approver)
-          ? nextPendingStep.approver[0]
-          : nextPendingStep.approver;
+        // Fetch next approver details separately to avoid RLS join issues
+        const { data: nextApproverProfile } = await supabase
+          .from('user_profiles')
+          .select('name, email')
+          .eq('id', nextPendingStep.approver_id)
+          .single();
 
-        if (nextApprover?.email) {
+        if (nextApproverProfile?.email) {
           try {
             await sendApprovalNeededEmail({
-              approverEmail: nextApprover.email,
-              approverName: nextApprover.name,
+              approverEmail: nextApproverProfile.email,
+              approverName: nextApproverProfile.name || nextApproverProfile.email,
               requesterName: step.request.requester?.name || 'Someone',
               dealName: step.request.deal_name,
               dealAmount: step.request.deal_amount || undefined,

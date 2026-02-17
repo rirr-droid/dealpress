@@ -32,7 +32,7 @@ export async function GET(
     // Get approval steps
     const { data: steps, error: stepsError } = await supabase
       .from('approval_steps')
-      .select('*, approver:approver_id(id, email, name)')
+      .select('*')
       .eq('request_id', id)
       .order('step_order');
 
@@ -43,10 +43,19 @@ export async function GET(
       .eq('id', approvalRequest.requester_id)
       .single();
 
+    // Fetch approver details separately to avoid RLS join issues
     const firstStep = steps?.[0];
-    const firstApprover = Array.isArray(firstStep?.approver)
-      ? firstStep.approver[0]
-      : firstStep?.approver;
+    let firstApprover = null;
+
+    if (firstStep?.approver_id) {
+      const { data: approverProfile } = await supabase
+        .from('user_profiles')
+        .select('id, email, name')
+        .eq('id', firstStep.approver_id)
+        .single();
+
+      firstApprover = approverProfile;
+    }
 
     return NextResponse.json({
       success: true,
@@ -57,13 +66,22 @@ export async function GET(
         created_at: approvalRequest.created_at,
       },
       requester: requester || null,
-      steps: steps?.map(step => ({
-        id: step.id,
-        step_name: step.step_name,
-        step_order: step.step_order,
-        status: step.status,
-        approver: Array.isArray(step.approver) ? step.approver[0] : step.approver,
-      })) || [],
+      steps: await Promise.all((steps || []).map(async (step) => {
+        // Fetch each approver separately
+        const { data: approverProfile } = await supabase
+          .from('user_profiles')
+          .select('id, email, name')
+          .eq('id', step.approver_id)
+          .single();
+
+        return {
+          id: step.id,
+          step_name: step.step_name,
+          step_order: step.step_order,
+          status: step.status,
+          approver: approverProfile || null,
+        };
+      })),
       firstApprover: firstApprover || null,
       emailWouldSendTo: firstApprover?.email || 'NO EMAIL FOUND',
       resendOnlyAllows: 'rob@dealpress.ai',

@@ -120,7 +120,7 @@ export async function createRequest(input: CreateRequestInput) {
       const { data: createdSteps, error: stepsError } = await supabase
         .from('approval_steps')
         .insert(steps)
-        .select('*, approver:approver_id(name, email)');
+        .select('*');
 
       if (stepsError) {
         console.error('Error creating steps:', stepsError);
@@ -130,11 +130,19 @@ export async function createRequest(input: CreateRequestInput) {
       // Send email to first approver
       if (createdSteps && createdSteps.length > 0) {
         const firstStep = createdSteps[0];
-        const firstApprover = Array.isArray(firstStep.approver)
-          ? firstStep.approver[0]
-          : firstStep.approver;
 
-        if (firstApprover?.email) {
+        // Fetch approver details separately to avoid RLS join issues
+        const { data: approverProfile, error: approverError } = await supabase
+          .from('user_profiles')
+          .select('name, email')
+          .eq('id', firstStep.approver_id)
+          .single();
+
+        if (approverError) {
+          console.error('Error fetching approver profile:', approverError);
+        }
+
+        if (approverProfile?.email) {
           // Get requester profile for name
           const { data: requesterProfile } = await supabase
             .from('user_profiles')
@@ -145,10 +153,10 @@ export async function createRequest(input: CreateRequestInput) {
           const requesterName = requesterProfile?.name || user.email!;
 
           try {
-            console.log('Attempting to send email to:', firstApprover.email);
+            console.log('Attempting to send email to:', approverProfile.email);
             const emailResult = await sendApprovalNeededEmail({
-              approverEmail: firstApprover.email,
-              approverName: firstApprover.name,
+              approverEmail: approverProfile.email,
+              approverName: approverProfile.name || approverProfile.email,
               requesterName,
               dealName: validatedInput.deal_name,
               dealAmount: validatedInput.deal_amount,
@@ -164,13 +172,15 @@ export async function createRequest(input: CreateRequestInput) {
               console.error('RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
               console.error('JWT_SECRET configured:', !!process.env.JWT_SECRET);
             } else {
-              console.log('Email sent successfully to:', firstApprover.email);
+              console.log('Email sent successfully to:', approverProfile.email);
             }
           } catch (emailError) {
             console.error('Failed to send approval needed email:', emailError);
             console.error('Error details:', emailError instanceof Error ? emailError.message : 'Unknown error');
             // Don't fail the request creation if email fails
           }
+        } else {
+          console.error('No approver email found for step:', firstStep.id, 'approver_id:', firstStep.approver_id);
         }
       }
     }
