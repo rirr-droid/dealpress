@@ -44,14 +44,22 @@ export async function createRequest(input: CreateRequestInput) {
 
     let templateSteps: TemplateStep[] = [];
     if (validatedInput.template_id) {
-      const { data: template } = await supabase
-        .from('approval_templates')
-        .select('*, steps:template_steps(*)')
-        .eq('id', validatedInput.template_id)
-        .single();
+      console.log('Fetching template steps for template_id:', validatedInput.template_id);
 
-      if (template?.steps) {
-        templateSteps = (template.steps as TemplateStep[]).sort((a, b) => a.step_order - b.step_order);
+      // Fetch template steps separately to avoid RLS join issues
+      const { data: steps, error: stepsError } = await supabase
+        .from('template_steps')
+        .select('step_name, step_order, approver_role')
+        .eq('template_id', validatedInput.template_id)
+        .order('step_order', { ascending: true });
+
+      console.log('Template steps fetched:', steps);
+      console.log('Template steps error:', stepsError);
+
+      if (steps && steps.length > 0) {
+        templateSteps = steps as TemplateStep[];
+      } else {
+        console.warn('No template steps found for template:', validatedInput.template_id);
       }
     }
 
