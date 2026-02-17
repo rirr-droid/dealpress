@@ -118,11 +118,19 @@ export async function updateTemplate(id: string, input: Partial<CreateTemplateIn
 
     // Update steps if provided
     if (input.steps) {
+      console.log('Updating template steps for template:', id);
+      console.log('Input steps:', JSON.stringify(input.steps, null, 2));
+
       // Delete existing steps
-      await supabase
+      const { error: deleteError } = await supabase
         .from('template_steps')
         .delete()
         .eq('template_id', id);
+
+      if (deleteError) {
+        console.error('Failed to delete existing steps:', deleteError);
+        return { success: false, error: `Failed to delete existing steps: ${deleteError.message}` };
+      }
 
       // Insert new steps
       const steps = input.steps.map((step, index) => ({
@@ -132,14 +140,19 @@ export async function updateTemplate(id: string, input: Partial<CreateTemplateIn
         approver_role: step.approver_role?.trim() || null,
       }));
 
+      console.log('Prepared steps for insertion:', JSON.stringify(steps, null, 2));
+
       const { error: stepsError } = await supabase
         .from('template_steps')
         .insert(steps);
 
       if (stepsError) {
-        console.error('Error updating template steps:', stepsError);
-        return { success: false, error: 'Failed to update template steps' };
+        console.error('Failed to insert steps:', stepsError);
+        console.error('Supabase error details:', JSON.stringify(stepsError, null, 2));
+        return { success: false, error: `Failed to update template steps: ${stepsError.message || stepsError.code}` };
       }
+
+      console.log('Successfully updated template steps');
     }
 
     revalidatePath('/templates');
