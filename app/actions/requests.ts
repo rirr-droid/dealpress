@@ -137,7 +137,8 @@ export async function createRequest(input: CreateRequestInput) {
           const requesterName = requesterProfile?.name || user.email!;
 
           try {
-            await sendApprovalNeededEmail({
+            console.log('Attempting to send email to:', firstApprover.email);
+            const emailResult = await sendApprovalNeededEmail({
               approverEmail: firstApprover.email,
               approverName: firstApprover.name,
               requesterName,
@@ -149,8 +150,17 @@ export async function createRequest(input: CreateRequestInput) {
               stepId: firstStep.id,
               approverId: firstStep.approver_id,
             });
+
+            if (!emailResult.success) {
+              console.error('Email sending failed:', emailResult.error);
+              console.error('RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
+              console.error('JWT_SECRET configured:', !!process.env.JWT_SECRET);
+            } else {
+              console.log('Email sent successfully to:', firstApprover.email);
+            }
           } catch (emailError) {
             console.error('Failed to send approval needed email:', emailError);
+            console.error('Error details:', emailError instanceof Error ? emailError.message : 'Unknown error');
             // Don't fail the request creation if email fails
           }
         }
