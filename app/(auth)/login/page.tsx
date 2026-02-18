@@ -14,25 +14,45 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useMagicLink, setUseMagicLink] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    const supabase = createClient();
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (useMagicLink) {
+        // Send magic link
+        const response = await fetch('/api/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
 
-      if (error) throw error;
+        const data = await response.json();
 
-      if (data.session) {
-        router.push("/dashboard");
-        router.refresh();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send magic link');
+        }
+
+        setMagicLinkSent(true);
+      } else {
+        // Traditional password login
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (data.session) {
+          router.push("/dashboard");
+          router.refresh();
+        }
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to sign in");
@@ -62,6 +82,19 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Magic Link Sent Success */}
+        {magicLinkSent && (
+          <div className="mb-6 p-6 bg-green-50 border border-green-200 rounded-xl text-center">
+            <h3 className="text-lg font-semibold text-green-900 mb-2">Check your email!</h3>
+            <p className="text-sm text-green-700 mb-4">
+              We sent a magic link to <strong>{email}</strong>
+            </p>
+            <p className="text-xs text-green-600">
+              Click the link to instantly sign in
+            </p>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -89,31 +122,44 @@ export default function LoginPage() {
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-[#1d1d1f] mb-2"
-            >
-              Password
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="h-12 rounded-xl border-gray-200"
-            />
-          </div>
+          {!useMagicLink && (
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-[#1d1d1f] mb-2"
+              >
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required={!useMagicLink}
+                className="h-12 rounded-xl border-gray-200"
+              />
+            </div>
+          )}
 
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || magicLinkSent}
             className="w-full h-12 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full text-base font-semibold mt-6"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? (useMagicLink ? "Sending..." : "Signing in...") : (useMagicLink ? "Send Magic Link" : "Sign In")}
           </Button>
+
+          {/* Toggle Magic Link / Password */}
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => setUseMagicLink(!useMagicLink)}
+              className="text-sm text-[#0071e3] hover:underline"
+            >
+              {useMagicLink ? "Use password instead" : "Send me a magic link"}
+            </button>
+          </div>
         </form>
 
         {/* Divider */}

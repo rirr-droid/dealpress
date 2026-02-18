@@ -16,6 +16,8 @@ export default function SignupPage() {
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useMagicLink, setUseMagicLink] = useState(true); // Default to magic link
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -24,32 +26,55 @@ export default function SignupPage() {
     setError(null);
 
     try {
-      // Call server-side API route instead of client-side Supabase
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          name,
-          companyName,
-        }),
-      });
+      if (useMagicLink) {
+        // Send magic link
+        const response = await fetch('/api/auth/magic-link', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            name,
+            companyName,
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send magic link');
+        }
+
+        setMagicLinkSent(true);
+      } else {
+        // Traditional signup with password
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            name,
+            companyName,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Signup failed');
+        }
+
+        // Sign in the user after successful signup
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({ email, password });
+
+        router.push("/dashboard");
+        router.refresh();
       }
-
-      // Sign in the user after successful signup
-      const supabase = createClient();
-      await supabase.auth.signInWithPassword({ email, password });
-
-      router.push("/dashboard");
-      router.refresh();
     } catch (error) {
       console.error('Signup error:', error);
       setError(error instanceof Error ? error.message : "Failed to create account");
@@ -75,9 +100,22 @@ export default function SignupPage() {
             Get started free
           </h1>
           <p className="text-[#86868b]">
-            Create your DealPress account
+            {useMagicLink ? "No password needed - we'll email you a login link" : "Create your DealPress account"}
           </p>
         </div>
+
+        {/* Magic Link Sent Success */}
+        {magicLinkSent && (
+          <div className="mb-6 p-6 bg-green-50 border border-green-200 rounded-xl text-center">
+            <h3 className="text-lg font-semibold text-green-900 mb-2">Check your email!</h3>
+            <p className="text-sm text-green-700 mb-4">
+              We sent a magic link to <strong>{email}</strong>
+            </p>
+            <p className="text-xs text-green-600">
+              Click the link in the email to instantly access your account
+            </p>
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -142,35 +180,48 @@ export default function SignupPage() {
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-[#1d1d1f] mb-2"
-            >
-              Password
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a strong password"
-              required
-              minLength={8}
-              className="h-12 rounded-xl border-gray-200"
-            />
-            <p className="text-xs text-[#86868b] mt-1">
-              Minimum 8 characters
-            </p>
-          </div>
+          {!useMagicLink && (
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-[#1d1d1f] mb-2"
+              >
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a strong password"
+                required={!useMagicLink}
+                minLength={8}
+                className="h-12 rounded-xl border-gray-200"
+              />
+              <p className="text-xs text-[#86868b] mt-1">
+                Minimum 8 characters
+              </p>
+            </div>
+          )}
 
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || magicLinkSent}
             className="w-full h-12 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full text-base font-semibold mt-6"
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? (useMagicLink ? "Sending magic link..." : "Creating account...") : (useMagicLink ? "Send Magic Link" : "Create Account")}
           </Button>
+
+          {/* Toggle Magic Link / Password */}
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => setUseMagicLink(!useMagicLink)}
+              className="text-sm text-[#0071e3] hover:underline"
+            >
+              {useMagicLink ? "Use password instead" : "Use magic link instead"}
+            </button>
+          </div>
         </form>
 
         {/* Terms */}
