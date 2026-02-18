@@ -2,9 +2,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRequests, getPendingApprovalsForUser, getMySubmittedRequests, getDashboardMetrics, getCurrentStepName } from "@/lib/db/requests";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUserOrganization, getUserProfile } from "@/lib/auth";
 import { getOnboardingProgress } from "@/app/actions/onboarding";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
+import UsageCounter from "@/components/UsageCounter";
 import Link from "next/link";
 import { Clock, CheckCircle, TrendingUp, FileText } from "lucide-react";
 
@@ -13,8 +14,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
+  const organization = await getUserOrganization();
+  const userProfile = await getUserProfile();
 
-  if (!user) {
+  if (!user || !organization) {
     return null; // Will be caught by middleware
   }
 
@@ -88,13 +91,21 @@ export default async function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-[#1d1d1f] mb-2">Dashboard</h1>
-        <p className="text-[#86868b]">Welcome back, {user.name}</p>
+        <p className="text-[#86868b]">Welcome back, {userProfile?.name || user.email}</p>
       </div>
 
       {/* Onboarding Checklist */}
       {showOnboarding && (
         <OnboardingChecklist steps={onboardingSteps} />
       )}
+
+      {/* Usage Counter */}
+      <UsageCounter
+        subscriptionTier={organization.subscription_tier || 'free'}
+        requestsThisMonth={organization.requests_this_month || 0}
+        maxRequestsPerMonth={organization.max_requests_per_month || 5}
+        usageResetDate={organization.usage_reset_date || new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()}
+      />
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

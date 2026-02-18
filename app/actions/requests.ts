@@ -87,6 +87,9 @@ export async function createRequest(input: CreateRequestInput) {
       return { success: false, error: 'Failed to create request' };
     }
 
+    // Increment usage counter for the organization
+    await supabase.rpc('increment_requests_this_month', { org_id: orgId });
+
     // Create approval steps from template
     if (templateSteps.length > 0) {
       // Get org members to assign approvers
