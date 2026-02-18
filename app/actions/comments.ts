@@ -21,10 +21,10 @@ export async function addStepComment(stepId: string, comment: string) {
       return { success: false, error: 'Comment cannot be empty' };
     }
 
-    // Verify the step exists and belongs to the user's organization
+    // Verify the step exists - fetch step first
     const { data: step, error: stepError } = await supabase
       .from('approval_steps')
-      .select('id, request_id, approval_requests!inner(organization_id)')
+      .select('id, request_id')
       .eq('id', stepId)
       .single();
 
@@ -32,16 +32,23 @@ export async function addStepComment(stepId: string, comment: string) {
       return { success: false, error: 'Approval step not found' };
     }
 
-    // Type assertion to access nested data
-    const stepWithRequest = step as unknown as {
-      id: string;
-      request_id: string;
-      approval_requests: { organization_id: string };
-    };
+    // Verify the request belongs to user's organization
+    const { data: request, error: requestError } = await supabase
+      .from('approval_requests')
+      .select('organization_id')
+      .eq('id', step.request_id)
+      .single();
 
-    if (stepWithRequest.approval_requests.organization_id !== orgId) {
+    if (requestError || !request) {
+      return { success: false, error: 'Request not found' };
+    }
+
+    if (request.organization_id !== orgId) {
       return { success: false, error: 'Unauthorized' };
     }
+
+    // Use step.request_id directly since we have it
+    const stepWithRequest = step;
 
     // Insert the comment
     const { error: insertError } = await supabase
@@ -89,15 +96,10 @@ export async function deleteStepComment(commentId: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Get the comment to verify ownership and get request_id for revalidation
+    // Get the comment to verify ownership
     const { data: comment, error: commentError } = await supabase
       .from('step_comments')
-      .select(`
-        id,
-        user_id,
-        step_id,
-        approval_steps!inner(request_id)
-      `)
+      .select('id, user_id, step_id')
       .eq('id', commentId)
       .single();
 
@@ -105,12 +107,20 @@ export async function deleteStepComment(commentId: string) {
       return { success: false, error: 'Comment not found' };
     }
 
-    // Type assertion
-    const commentWithStep = comment as unknown as {
-      id: string;
-      user_id: string;
-      step_id: string;
-      approval_steps: { request_id: string };
+    // Get the step to find request_id for revalidation
+    const { data: step } = await supabase
+      .from('approval_steps')
+      .select('request_id')
+      .eq('id', comment.step_id)
+      .single();
+
+    if (!step) {
+      return { success: false, error: 'Step not found' };
+    }
+
+    const commentWithStep = {
+      ...comment,
+      approval_steps: { request_id: step.request_id }
     };
 
     // Delete the comment (RLS will ensure user has permission)
