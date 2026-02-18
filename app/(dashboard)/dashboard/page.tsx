@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRequests, getPendingApprovalsForUser, getMySubmittedRequests, getDashboardMetrics, getCurrentStepName } from "@/lib/db/requests";
 import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingProgress } from "@/app/actions/onboarding";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 import Link from "next/link";
 import { Clock, CheckCircle, TrendingUp, FileText } from "lucide-react";
 
@@ -20,6 +22,40 @@ export default async function DashboardPage() {
   const myPendingApprovals = await getPendingApprovalsForUser(user.id);
   const mySubmittedRequests = await getMySubmittedRequests(user.id);
   const metrics = await getDashboardMetrics();
+  const onboardingProgress = await getOnboardingProgress();
+
+  // Build onboarding steps
+  const onboardingSteps = [
+    {
+      id: 'install_template',
+      title: 'Install your first template',
+      description: 'Choose from 5 pre-built templates to get started instantly',
+      completed: onboardingProgress.hasTemplate,
+      action: { label: 'Browse Templates', href: '/templates' },
+    },
+    {
+      id: 'create_request',
+      title: 'Create your first approval request',
+      description: 'Submit a deal for approval to see the workflow in action',
+      completed: onboardingProgress.hasRequest,
+      action: { label: 'Create Request', href: '/requests' },
+    },
+    {
+      id: 'approve_request',
+      title: 'Approve a request',
+      description: 'Experience the one-click approval process',
+      completed: onboardingProgress.hasApproval,
+    },
+    {
+      id: 'invite_team',
+      title: 'Invite your team',
+      description: 'Add team members to collaborate on approvals',
+      completed: onboardingProgress.hasInvitedTeam,
+      action: { label: 'Invite Team', href: '/settings' },
+    },
+  ];
+
+  const showOnboarding = onboardingSteps.some(step => !step.completed);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -52,8 +88,13 @@ export default async function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-[#1d1d1f] mb-2">Dashboard</h1>
-        <p className="text-[#86868b]">Welcome back</p>
+        <p className="text-[#86868b]">Welcome back, {user.name}</p>
       </div>
+
+      {/* Onboarding Checklist */}
+      {showOnboarding && (
+        <OnboardingChecklist steps={onboardingSteps} />
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
