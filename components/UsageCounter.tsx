@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Zap, CheckCircle } from "lucide-react";
-import Link from "next/link";
 import { motion } from "framer-motion";
+import { useTrackConversion } from "@/hooks/use-track-conversion";
 
 interface UsageCounterProps {
   subscriptionTier: string;
@@ -21,6 +21,7 @@ export default function UsageCounter({
   maxRequestsPerMonth,
   usageResetDate,
 }: UsageCounterProps) {
+  const { trackUpgradeClick } = useTrackConversion();
   const isPro = subscriptionTier === 'pro' || subscriptionTier === 'enterprise';
   const used = requestsThisMonth || 0;
   const limit = isPro ? Infinity : (maxRequestsPerMonth || 5);
@@ -113,12 +114,13 @@ export default function UsageCounter({
               <p className="text-sm text-[#ff3b30] mb-3">
                 You've reached your monthly limit. Upgrade to Pro for unlimited requests.
               </p>
-              <Link href="/settings">
-                <Button className="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Upgrade to Pro
-                </Button>
-              </Link>
+              <Button
+                onClick={() => trackUpgradeClick('usage_limit_dashboard')}
+                className="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Upgrade to Pro
+              </Button>
             </motion.div>
           )}
 
@@ -131,12 +133,14 @@ export default function UsageCounter({
               <p className="text-sm text-[#ff9500] mb-3">
                 You're running low on requests. Upgrade to Pro for unlimited access.
               </p>
-              <Link href="/settings">
-                <Button variant="outline" className="w-full border-[#0071e3] text-[#0071e3] hover:bg-blue-50 rounded-full">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  View Pro Plan
-                </Button>
-              </Link>
+              <Button
+                onClick={() => trackUpgradeClick('usage_limit_dashboard')}
+                variant="outline"
+                className="w-full border-[#0071e3] text-[#0071e3] hover:bg-blue-50 rounded-full"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                View Pro Plan
+              </Button>
             </motion.div>
           )}
         </div>
