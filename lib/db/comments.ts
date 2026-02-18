@@ -39,7 +39,7 @@ export async function getStepComments(stepId: string): Promise<StepComment[]> {
   }
 
   // Fetch user profiles separately
-  const userIds = [...new Set(data.map(comment => comment.user_id))];
+  const userIds = Array.from(new Set(data.map(comment => comment.user_id)));
   const { data: users } = await supabase
     .from('user_profiles')
     .select('id, name, email, avatar_url')
