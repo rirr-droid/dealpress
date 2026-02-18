@@ -56,85 +56,136 @@ export async function sendApprovalNeededEmail({
 
   return await sendEmail({
     to: approverEmail,
-    subject: `Approval Required for ${dealName}`,
+    subject: `Deal Approval Required: ${dealName}`,
     html: `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Approval Request</title>
+        <title>Approval Request - DealPress</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #f6f6f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f6f6f6; padding: 20px 0;">
+      <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, Helvetica, sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; padding: 40px 20px;">
           <tr>
             <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <!-- Header -->
+              <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #dddddd;">
+
+                <!-- Header with Logo/Brand -->
                 <tr>
-                  <td style="background-color: #0071e3; padding: 30px 40px; text-align: center;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">New Approval Request</h1>
+                  <td style="padding: 30px 40px; background-color: #ffffff; border-bottom: 3px solid #0066cc;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td>
+                          <h1 style="margin: 0; color: #0066cc; font-size: 24px; font-weight: 700; font-family: Arial, sans-serif;">DealPress</h1>
+                          <p style="margin: 5px 0 0 0; color: #666666; font-size: 13px;">Deal Approval System</p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
-                <!-- Body -->
+
+                <!-- Main Content -->
                 <tr>
                   <td style="padding: 40px;">
-                    <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
-                      Hello ${approverName},
-                    </p>
-                    <p style="margin: 0 0 30px; color: #333333; font-size: 16px; line-height: 1.6;">
-                      ${requesterName} has submitted a deal that requires your approval.
+                    <h2 style="margin: 0 0 20px 0; color: #222222; font-size: 20px; font-weight: 700;">Approval Request</h2>
+
+                    <p style="margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;">
+                      Dear ${approverName},
                     </p>
 
-                    <!-- Deal Details Box -->
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9f9f9; border-radius: 6px; margin-bottom: 30px;">
+                    <p style="margin: 0 0 25px 0; color: #333333; font-size: 15px; line-height: 1.6;">
+                      A new deal approval has been submitted by ${requesterName} and requires your review. Please review the details below and take appropriate action.
+                    </p>
+
+                    <!-- Deal Information -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9f9f9; border: 1px solid #e5e5e5; margin-bottom: 25px;">
                       <tr>
-                        <td style="padding: 20px;">
-                          <h2 style="margin: 0 0 15px; color: #1a1a1a; font-size: 20px; font-weight: 600;">${dealName}</h2>
-                          ${amountText ? `<p style="margin: 0 0 10px; color: #333333; font-size: 16px;"><strong>Deal Amount:</strong> ${amountText}</p>` : ''}
-                          <p style="margin: 0 0 10px; color: #666666; font-size: 14px;"><strong>Approval Step:</strong> ${stepName}</p>
-                          ${reasonText}
+                        <td style="padding: 25px;">
+                          <h3 style="margin: 0 0 15px 0; color: #222222; font-size: 18px; font-weight: 700;">${dealName}</h3>
+
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            ${amountText ? `
+                            <tr>
+                              <td style="padding: 5px 0; color: #555555; font-size: 14px; line-height: 1.5;">
+                                <strong style="color: #222222;">Deal Amount:</strong> ${amountText}
+                              </td>
+                            </tr>
+                            ` : ''}
+                            <tr>
+                              <td style="padding: 5px 0; color: #555555; font-size: 14px; line-height: 1.5;">
+                                <strong style="color: #222222;">Approval Step:</strong> ${stepName}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 5px 0; color: #555555; font-size: 14px; line-height: 1.5;">
+                                <strong style="color: #222222;">Submitted By:</strong> ${requesterName}
+                              </td>
+                            </tr>
+                            ${reason ? `
+                            <tr>
+                              <td style="padding: 10px 0 5px 0; color: #555555; font-size: 14px; line-height: 1.5;">
+                                <strong style="color: #222222;">Justification:</strong><br/>
+                                ${reason}
+                              </td>
+                            </tr>
+                            ` : ''}
+                          </table>
                         </td>
                       </tr>
                     </table>
 
                     ${approveUrl && rejectUrl ? `
                     <!-- Action Buttons -->
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
                       <tr>
-                        <td align="center" style="padding: 10px 0;">
-                          <table cellpadding="0" cellspacing="0" border="0">
+                        <td align="center" style="padding: 15px 0;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td style="padding-right: 10px;">
-                                <a href="${approveUrl}" style="display: inline-block; background-color: #34c759; color: #ffffff; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">Approve Request</a>
+                              <td style="padding: 0 8px;">
+                                <a href="${approveUrl}" style="display: inline-block; background-color: #28a745; color: #ffffff; padding: 12px 30px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: Arial, sans-serif;">Approve</a>
                               </td>
-                              <td style="padding-left: 10px;">
-                                <a href="${rejectUrl}" style="display: inline-block; background-color: #ff3b30; color: #ffffff; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">Reject Request</a>
+                              <td style="padding: 0 8px;">
+                                <a href="${rejectUrl}" style="display: inline-block; background-color: #dc3545; color: #ffffff; padding: 12px 30px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: Arial, sans-serif;">Decline</a>
                               </td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                     </table>
+
+                    <p style="margin: 0 0 20px 0; color: #555555; font-size: 13px; line-height: 1.6; text-align: center;">
+                      Or view full details and provide comments:
+                    </p>
                     ` : ''}
 
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <!-- View Details Button -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td align="center" style="padding: 10px 0;">
-                          <a href="${requestUrl}" style="display: inline-block; background-color: #0071e3; color: #ffffff; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">View Complete Details</a>
+                          <a href="${requestUrl}" style="display: inline-block; background-color: #0066cc; color: #ffffff; padding: 12px 30px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: Arial, sans-serif;">View Full Details</a>
                         </td>
                       </tr>
                     </table>
-                  </td>
-                </tr>
-                <!-- Footer -->
-                <tr>
-                  <td style="background-color: #f6f6f6; padding: 20px 40px; text-align: center; border-top: 1px solid #e5e5e5;">
-                    <p style="margin: 0; color: #999999; font-size: 13px; line-height: 1.5;">
-                      This is an automated notification from DealPress
+
+                    <p style="margin: 25px 0 0 0; color: #666666; font-size: 13px; line-height: 1.6;">
+                      If you have questions about this request, please contact ${requesterName} or review the complete details in DealPress.
                     </p>
                   </td>
                 </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f4f4f4; padding: 25px 40px; border-top: 1px solid #dddddd;">
+                    <p style="margin: 0 0 10px 0; color: #666666; font-size: 12px; line-height: 1.5; text-align: center;">
+                      This is an automated notification from DealPress deal approval system.
+                    </p>
+                    <p style="margin: 0; color: #999999; font-size: 11px; line-height: 1.5; text-align: center;">
+                      DealPress &copy; ${new Date().getFullYear()} | <a href="${APP_URL}" style="color: #0066cc; text-decoration: none;">Visit DealPress</a>
+                    </p>
+                  </td>
+                </tr>
+
               </table>
             </td>
           </tr>
