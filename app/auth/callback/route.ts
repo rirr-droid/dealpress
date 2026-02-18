@@ -21,13 +21,28 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .single();
 
-      // If new user and we have name/company, create profile and org
-      if (!existingProfile && (name || company)) {
+      // If new user, create profile and org
+      if (!existingProfile) {
+        // Extract name from Google profile metadata or fallback
+        const userName = name ||
+                        user.user_metadata?.full_name ||
+                        user.user_metadata?.name ||
+                        user.email?.split('@')[0] ||
+                        'User';
+
+        // Extract company from email domain
+        const emailDomain = user.email?.split('@')[1] || '';
+        const companyFromEmail = emailDomain.replace(/\.(com|io|net|org)$/, '');
+        const orgName = company ||
+                       (companyFromEmail !== 'gmail' && companyFromEmail !== 'yahoo' && companyFromEmail !== 'hotmail'
+                         ? companyFromEmail.charAt(0).toUpperCase() + companyFromEmail.slice(1)
+                         : `${userName}'s Organization`);
+
         // Create organization first
         const { data: org, error: orgError } = await supabase
           .from('organizations')
           .insert({
-            name: company || `${name}'s Organization`,
+            name: orgName,
           })
           .select()
           .single();
@@ -37,7 +52,8 @@ export async function GET(request: Request) {
           await supabase.from('user_profiles').insert({
             id: user.id,
             email: user.email,
-            name: name || user.email?.split('@')[0] || 'User',
+            name: userName,
+            avatar_url: user.user_metadata?.avatar_url || null,
           });
 
           // Add user as admin to organization
