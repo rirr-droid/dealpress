@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { canPerformAction } from "@/lib/billing/usage";
 import { sendApprovalNeededEmail } from "@/lib/email/notifications";
 import { createRequestSchema, CreateRequestInput } from "@/lib/validations";
+import { createContact, incrementContactUsage } from "@/app/actions/contacts";
 
 /**
  * Create a new approval request
@@ -101,6 +102,11 @@ export async function createRequest(input: CreateRequestInput) {
       }
 
       const steps = templateSteps.map((templateStep, index: number) => {
+        // Check if there's a custom approver for this step
+        const customApprover = validatedInput.custom_approvers?.find(
+          ca => ca.step_order === templateStep.step_order
+        );
+
         // Find an approver based on role
         // For now, just assign to first member with matching role or first admin
         const approver = (members as OrgMember[] | null)?.find(m =>
@@ -112,6 +118,7 @@ export async function createRequest(input: CreateRequestInput) {
           step_name: templateStep.step_name,
           step_order: templateStep.step_order,
           approver_id: approver?.user_id || user.id, // Fallback to requester
+          approver_email: customApprover?.email || null, // Store custom approver email
           status: index === 0 ? 'pending' : 'not-started', // First step is pending
           assigned_at: index === 0 ? new Date().toISOString() : null,
         };
@@ -127,22 +134,60 @@ export async function createRequest(input: CreateRequestInput) {
         // Don't fail the request, just log error
       }
 
+      // Save custom approvers to contacts if requested
+      if (validatedInput.custom_approvers) {
+        for (const customApprover of validatedInput.custom_approvers) {
+          if (customApprover.save_to_contacts && customApprover.email) {
+            // Extract name from email if not provided
+            const name = customApprover.name || customApprover.email.split('@')[0];
+
+            await createContact({
+              name,
+              email: customApprover.email,
+            });
+          }
+        }
+      }
+
       // Send email to first approver
       if (createdSteps && createdSteps.length > 0) {
         const firstStep = createdSteps[0];
 
-        // Fetch approver details separately to avoid RLS join issues
-        const { data: approverProfile, error: approverError } = await supabase
-          .from('user_profiles')
-          .select('name, email')
-          .eq('id', firstStep.approver_id)
-          .single();
+        // Determine approver email and name
+        let approverEmail: string | null = null;
+        let approverName: string | null = null;
 
-        if (approverError) {
-          console.error('Error fetching approver profile:', approverError);
+        // Check if step has a custom approver email
+        if (firstStep.approver_email) {
+          approverEmail = firstStep.approver_email;
+
+          // Get name from custom_approvers input
+          const customApprover = validatedInput.custom_approvers?.find(
+            ca => ca.step_order === firstStep.step_order
+          );
+          approverName = customApprover?.name || firstStep.approver_email.split('@')[0];
+
+          // Increment contact usage count
+          await incrementContactUsage(firstStep.approver_email);
+        } else {
+          // Fetch approver details from user profile
+          const { data: approverProfile, error: approverError } = await supabase
+            .from('user_profiles')
+            .select('name, email')
+            .eq('id', firstStep.approver_id)
+            .single();
+
+          if (approverError) {
+            console.error('Error fetching approver profile:', approverError);
+          }
+
+          if (approverProfile) {
+            approverEmail = approverProfile.email;
+            approverName = approverProfile.name;
+          }
         }
 
-        if (approverProfile?.email) {
+        if (approverEmail) {
           // Get requester profile for name
           const { data: requesterProfile } = await supabase
             .from('user_profiles')
@@ -153,10 +198,10 @@ export async function createRequest(input: CreateRequestInput) {
           const requesterName = requesterProfile?.name || user.email!;
 
           try {
-            console.log('Attempting to send email to:', approverProfile.email);
+            console.log('Attempting to send email to:', approverEmail);
             const emailResult = await sendApprovalNeededEmail({
-              approverEmail: approverProfile.email,
-              approverName: approverProfile.name || approverProfile.email,
+              approverEmail,
+              approverName: approverName || approverEmail,
               requesterName,
               dealName: validatedInput.deal_name,
               dealAmount: validatedInput.deal_amount,
@@ -172,7 +217,7 @@ export async function createRequest(input: CreateRequestInput) {
               console.error('RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
               console.error('JWT_SECRET configured:', !!process.env.JWT_SECRET);
             } else {
-              console.log('Email sent successfully to:', approverProfile.email);
+              console.log('Email sent successfully to:', approverEmail);
             }
           } catch (emailError) {
             console.error('Failed to send approval needed email:', emailError);

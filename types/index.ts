@@ -89,6 +89,7 @@ export interface ApprovalStep {
   step_order: number;
   approver_id: string;
   approver?: User;
+  approver_email?: string; // Custom approver email (for external approvers)
 
   status: StepStatus;
   comments?: string;

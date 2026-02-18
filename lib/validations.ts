@@ -12,6 +12,12 @@ export const createRequestSchema = z.object({
   priority: z.enum(['low', 'normal', 'high', 'urgent']),
   reason: z.string().max(1000, 'Reason is too long').optional(),
   template_id: z.string().uuid('Invalid template ID').optional(),
+  custom_approvers: z.array(z.object({
+    step_order: z.number().int().min(1),
+    email: z.string().email('Invalid email address'),
+    name: z.string().optional(),
+    save_to_contacts: z.boolean().optional(),
+  })).optional(),
 });
 
 export type CreateRequestInput = z.infer<typeof createRequestSchema>;
