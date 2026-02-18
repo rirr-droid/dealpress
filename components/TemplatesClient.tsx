@@ -8,20 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { LayoutTemplate, Plus, Clock, Users, TrendingUp, Circle, Edit, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import CreateTemplateDialog from "@/components/CreateTemplateDialog";
+import DefaultTemplateLibrary from "@/components/DefaultTemplateLibrary";
 import { deleteTemplate, toggleTemplateStatus } from "@/app/actions/templates";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import type { DefaultTemplate } from "@/lib/default-templates";
 
 type FilterType = "all" | "active" | "inactive";
 
 interface TemplatesClientProps {
   templates: ApprovalTemplate[];
+  availableDefaultTemplates?: DefaultTemplate[];
 }
 
-export default function TemplatesClient({ templates }: TemplatesClientProps) {
+export default function TemplatesClient({ templates, availableDefaultTemplates }: TemplatesClientProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ApprovalTemplate | null>(null);
+  const [showDefaultTemplates, setShowDefaultTemplates] = useState(templates.length === 0);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -100,26 +104,51 @@ export default function TemplatesClient({ templates }: TemplatesClientProps) {
         </Button>
       </div>
 
+      {/* Default Templates Library */}
+      {availableDefaultTemplates && availableDefaultTemplates.length > 0 && (
+        <DefaultTemplateLibrary
+          availableTemplates={availableDefaultTemplates}
+          onInstalled={() => {
+            router.refresh();
+            setShowDefaultTemplates(false);
+          }}
+        />
+      )}
+
+      {/* Divider if we have both default templates and custom templates */}
+      {availableDefaultTemplates && availableDefaultTemplates.length > 0 && templates.length > 0 && (
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-[#f5f5f7] text-[#86868b] font-medium">Your Custom Templates</span>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="flex gap-3">
-        {(["all", "active", "inactive"] as const).map((status) => (
-          <Button
-            key={status}
-            variant={filter === status ? "default" : "outline"}
-            onClick={() => setFilter(status)}
-            className={`rounded-full capitalize ${
-              filter === status
-                ? "bg-[#0071e3] hover:bg-[#0077ed]"
-                : "border-gray-200"
-            }`}
-          >
-            {status}
-            {status === "all" && ` (${templates.length})`}
-            {status === "active" && ` (${templates.filter(t => t.is_active).length})`}
-            {status === "inactive" && ` (${templates.filter(t => !t.is_active).length})`}
-          </Button>
-        ))}
-      </div>
+      {templates.length > 0 && (
+        <div className="flex gap-3">
+          {(["all", "active", "inactive"] as const).map((status) => (
+            <Button
+              key={status}
+              variant={filter === status ? "default" : "outline"}
+              onClick={() => setFilter(status)}
+              className={`rounded-full capitalize ${
+                filter === status
+                  ? "bg-[#0071e3] hover:bg-[#0077ed]"
+                  : "border-gray-200"
+              }`}
+            >
+              {status}
+              {status === "all" && ` (${templates.length})`}
+              {status === "active" && ` (${templates.filter(t => t.is_active).length})`}
+              {status === "inactive" && ` (${templates.filter(t => !t.is_active).length})`}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
