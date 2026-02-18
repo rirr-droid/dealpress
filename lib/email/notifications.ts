@@ -51,20 +51,36 @@ export async function sendApprovalNeededEmail({
     }
   }
 
+  const amountText = dealAmount ? `$${dealAmount.toLocaleString()}` : '';
+  const reasonText = reason ? `<p style="color: #86868b; font-size: 14px; margin: 10px 0 0;"><strong>Reason:</strong> ${reason}</p>` : '';
+
   return await sendEmail({
     to: approverEmail,
     subject: `Approval Needed: ${dealName}`,
-    react: ApprovalNeededEmail({
-      approverName,
-      requesterName,
-      dealName,
-      dealAmount,
-      reason,
-      stepName,
-      requestUrl,
-      approveUrl,
-      rejectUrl,
-    }),
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <h1 style="color: #0071e3; font-size: 28px; margin-bottom: 20px;">Approval Request</h1>
+        <p style="color: #1d1d1f; font-size: 16px; line-height: 24px;">Hi ${approverName},</p>
+        <p style="color: #1d1d1f; font-size: 16px; line-height: 24px;">
+          ${requesterName} has submitted a new approval request that requires your review.
+        </p>
+        <div style="background: #f5f5f7; border-radius: 12px; padding: 20px; margin: 24px 0;">
+          <h2 style="color: #1d1d1f; font-size: 20px; margin: 0 0 10px;">${dealName}</h2>
+          ${amountText ? `<p style="color: #1d1d1f; font-size: 16px; margin: 10px 0 0;"><strong>Amount:</strong> ${amountText}</p>` : ''}
+          <p style="color: #86868b; font-size: 14px; margin: 10px 0 0;"><strong>Step:</strong> ${stepName}</p>
+          ${reasonText}
+        </div>
+        ${approveUrl && rejectUrl ? `
+          <div style="margin: 24px 0;">
+            <a href="${approveUrl}" style="display: inline-block; background: #34c759; color: white; padding: 12px 32px; border-radius: 20px; text-decoration: none; font-weight: 600; margin-right: 10px;">✓ Approve</a>
+            <a href="${rejectUrl}" style="display: inline-block; background: #ff3b30; color: white; padding: 12px 32px; border-radius: 20px; text-decoration: none; font-weight: 600;">✗ Reject</a>
+          </div>
+        ` : ''}
+        <a href="${requestUrl}" style="display: inline-block; background: #0071e3; color: white; padding: 12px 24px; border-radius: 20px; text-decoration: none; font-weight: 600; margin: 16px 0;">View Full Details</a>
+        <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;" />
+        <p style="color: #86868b; font-size: 14px; line-height: 20px;">DealPress - Deal approvals, made simple.</p>
+      </div>
+    `,
   });
 }
 
