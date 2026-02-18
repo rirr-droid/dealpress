@@ -1,15 +1,23 @@
 import { Resend } from 'resend';
 
-// Initialize Resend only if API key is available
+// Create Resend instance lazily to avoid serverless issues
+let resendInstance: Resend | null = null;
+
 const getResend = () => {
   if (!process.env.RESEND_API_KEY) {
     console.warn('RESEND_API_KEY is not set - Email features will not work');
     return null;
   }
 
-  return new Resend(process.env.RESEND_API_KEY);
+  // Create instance only when needed
+  if (!resendInstance) {
+    resendInstance = new Resend(process.env.RESEND_API_KEY);
+  }
+
+  return resendInstance;
 };
 
+// Export for compatibility
 export const resend = getResend();
 
 /**
@@ -26,13 +34,15 @@ export async function sendEmail({
   html?: string;
   react?: React.ReactElement;
 }) {
-  if (!resend) {
+  const resendClient = getResend();
+
+  if (!resendClient) {
     console.warn('Resend not configured - email not sent');
     return { success: false, error: 'Email service not configured' };
   }
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await resendClient.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'DealPress <onboarding@resend.dev>',
       to,
       subject,
