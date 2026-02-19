@@ -1,11 +1,31 @@
-"use client";
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings, Bell, Users, Plug, Mail, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
+import { SlackIntegrationCard } from "@/components/settings/SlackIntegrationCard";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+
+  // Get user's organization
+  const { data: membership } = await supabase
+    .from('organization_members')
+    .select('organization_id, role')
+    .eq('user_id', user.id)
+    .single();
+
+  let organization = null;
+  if (membership) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id, name, slack_enabled, slack_workspace_id, subscription_tier')
+      .eq('id', membership.organization_id)
+      .single();
+    organization = org;
+  }
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -16,6 +36,12 @@ export default function SettingsPage() {
 
       {/* Settings Sections */}
       <div className="grid gap-4">
+        {/* Slack Integration */}
+        <SlackIntegrationCard
+          organization={organization}
+          isAdmin={membership?.role === 'admin'}
+        />
+
         {/* Billing */}
         <Card className="p-6 rounded-[18px] border border-gray-200">
           <div className="flex items-start gap-4">
@@ -65,9 +91,12 @@ export default function SettingsPage() {
               <p className="text-sm text-[#86868b] mb-4">
                 Invite team members and manage roles and permissions
               </p>
-              <Button variant="outline" className="rounded-full" disabled>
-                Manage Team
-              </Button>
+              <Link href="/settings/team">
+                <Button className="bg-[#34c759] hover:bg-[#30b350] text-white rounded-full">
+                  <Users className="w-4 h-4 mr-2" />
+                  Manage Team
+                </Button>
+              </Link>
             </div>
           </div>
         </Card>
