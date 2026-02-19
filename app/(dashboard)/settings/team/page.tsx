@@ -7,6 +7,10 @@ export default async function TeamSettingsPage() {
   const supabase = await createClient();
   const user = await getCurrentUser();
 
+  if (!user) {
+    redirect('/login');
+  }
+
   // Get user's organization and role
   const { data: membership } = await supabase
     .from('organization_members')
