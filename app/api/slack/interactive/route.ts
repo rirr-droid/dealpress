@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Slack interactive message handler
  * Handles button clicks from Slack messages (Approve/Reject)

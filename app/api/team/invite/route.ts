@@ -4,6 +4,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { generateToken } from '@/lib/crypto/encryption';
 import { sendTeamInvitationEmail } from '@/lib/email/invitations';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Send team invitation
  */

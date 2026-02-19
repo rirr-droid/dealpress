@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { encrypt } from '@/lib/crypto/encryption';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Slack OAuth callback handler
  * Exchanges the OAuth code for an access token and stores it
