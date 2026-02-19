@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from "lucide-react";
 
+// Prevent static generation since we use searchParams
+export const dynamic = 'force-dynamic';
+
 export default function AcceptInvitationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
