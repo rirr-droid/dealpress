@@ -10,6 +10,10 @@ export default async function SettingsPage() {
   const supabase = await createClient();
   const user = await getCurrentUser();
 
+  if (!user) {
+    return null; // Or redirect to login
+  }
+
   // Get user's organization
   const { data: membership } = await supabase
     .from('organization_members')
