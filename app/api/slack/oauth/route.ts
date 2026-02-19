@@ -88,9 +88,24 @@ export async function GET(request: Request) {
     }
 
     // Encrypt the bot token before storing
-    const encryptedToken = encrypt(data.access_token);
+    let encryptedToken: string;
+    try {
+      encryptedToken = encrypt(data.access_token);
+      console.log('Token encrypted successfully');
+    } catch (encryptError) {
+      console.error('Failed to encrypt token:', encryptError);
+      return NextResponse.redirect(
+        new URL('/settings?slack=error&message=encryption_failed', request.url)
+      );
+    }
 
     // Store Slack configuration
+    console.log('Updating organization with Slack config:', {
+      orgId: state,
+      workspaceId: data.team.id,
+      hasToken: !!encryptedToken,
+    });
+
     const { error: updateError } = await supabase
       .from('organizations')
       .update({
@@ -106,6 +121,8 @@ export async function GET(request: Request) {
         new URL('/settings?slack=error&message=database_error', request.url)
       );
     }
+
+    console.log('Organization updated successfully with Slack config');
 
     // Sync Slack users (optional - can be done in background)
     // This helps pre-populate the slack_users table
