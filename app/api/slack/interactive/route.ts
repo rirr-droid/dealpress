@@ -106,12 +106,19 @@ async function handleBlockAction(payload: any) {
     });
   }
 
-  // Get request details for the response message
+  // Get request details for the response message and check for self-approval
   const { data: approvalRequest } = await supabase
     .from('approval_requests')
-    .select('deal_name, deal_amount')
+    .select('deal_name, deal_amount, requester_id')
     .eq('id', requestId)
     .single();
+
+  // Prevent self-approval
+  if (approvalRequest?.requester_id === slackUser.user_id) {
+    return NextResponse.json({
+      text: '❌ You cannot approve your own request.',
+    });
+  }
 
   if (actionType === 'approve') {
     // Approve the step
