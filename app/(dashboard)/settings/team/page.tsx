@@ -47,7 +47,7 @@ export default async function TeamSettingsPage() {
     .order('created_at', { ascending: true });
 
   // Get pending invitations (admin only)
-  let pendingInvitations = [];
+  let pendingInvitations: any[] = [];
   if (membership.role === 'admin') {
     const { data: invitations } = await supabase
       .from('team_invitations')
