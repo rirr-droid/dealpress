@@ -20,6 +20,13 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const user = await getCurrentUser();
 
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     // Verify user is admin of this organization
     const { data: membership } = await supabase
       .from('organization_members')

@@ -19,6 +19,13 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const user = await getCurrentUser();
 
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     // Get invitation to verify permissions
     const { data: invitation } = await supabase
       .from('team_invitations')
