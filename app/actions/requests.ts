@@ -5,6 +5,7 @@ import { getCurrentUser, getUserOrgId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { canPerformAction } from "@/lib/billing/usage";
 import { sendApprovalNeededEmail } from "@/lib/email/notifications";
+import { sendSlackApprovalNotification } from "@/lib/slack/notifications";
 import { createRequestSchema, CreateRequestInput } from "@/lib/validations";
 import { createContact, incrementContactUsage } from "@/app/actions/contacts";
 
@@ -221,6 +222,30 @@ export async function createRequest(input: CreateRequestInput) {
               console.error('JWT_SECRET configured:', !!process.env.JWT_SECRET);
             } else {
               console.log('Email sent successfully to:', approverEmail);
+            }
+
+            // Send Slack notification
+            try {
+              console.log('Attempting to send Slack notification to:', approverEmail);
+              const slackResult = await sendSlackApprovalNotification({
+                organizationId: orgId,
+                approverEmail,
+                dealName: validatedInput.deal_name,
+                dealAmount: validatedInput.deal_amount,
+                requesterName,
+                reason: validatedInput.reason,
+                requestId: request.id,
+                stepId: firstStep.id,
+              });
+
+              if (!slackResult.success) {
+                console.log('Slack notification not sent:', slackResult.error);
+              } else {
+                console.log('Slack notification sent successfully to:', approverEmail);
+              }
+            } catch (slackError) {
+              console.error('Failed to send Slack notification:', slackError);
+              // Don't fail the request creation if Slack fails
             }
           } catch (emailError) {
             console.error('Failed to send approval needed email:', emailError);
