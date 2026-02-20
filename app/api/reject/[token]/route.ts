@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyApprovalToken } from '@/lib/auth/email-tokens';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { sendRequestRejectedEmail } from '@/lib/email/notifications';
 
 /**
@@ -31,7 +31,7 @@ export async function GET(
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
 
     // Get the step with request details
     const { data: step, error: stepError } = await supabase
@@ -122,7 +122,7 @@ export async function POST(
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
 
     // Get the step with request details
     const { data: step, error: stepError } = await supabase

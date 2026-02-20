@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyApprovalToken } from '@/lib/auth/email-tokens';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { sendRequestApprovedEmail, sendStepApprovedEmail, sendApprovalNeededEmail } from '@/lib/email/notifications';
 
 /**
@@ -32,7 +32,8 @@ export async function GET(
       );
     }
 
-    const supabase = await createClient();
+    // Use service role client since this is an unauthenticated email link
+    const supabase = createServiceRoleClient();
 
     // Get the step with request details
     const { data: step, error: stepError } = await supabase
