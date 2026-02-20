@@ -67,19 +67,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user is already a member
-    const { data: existingMember } = await supabase
-      .from('organization_members')
+    // Check if email already belongs to a member of this org
+    const { data: existingUserWithEmail } = await supabase
+      .from('user_profiles')
       .select('id')
-      .eq('organization_id', organizationId)
-      .eq('user_id', user.id)
+      .eq('email', email)
       .single();
 
-    if (existingMember) {
-      return NextResponse.json(
-        { error: 'User is already a member of this organization' },
-        { status: 400 }
-      );
+    if (existingUserWithEmail) {
+      // Check if they're already a member
+      const { data: existingMember } = await supabase
+        .from('organization_members')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('user_id', existingUserWithEmail.id)
+        .single();
+
+      if (existingMember) {
+        return NextResponse.json(
+          { error: 'User is already a member of this organization' },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if there's already a pending invitation
