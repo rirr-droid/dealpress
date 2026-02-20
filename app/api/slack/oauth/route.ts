@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { encrypt } from '@/lib/crypto/encryption';
 
@@ -99,14 +99,15 @@ export async function GET(request: Request) {
       );
     }
 
-    // Store Slack configuration
+    // Store Slack configuration using service role client to bypass RLS
     console.log('Updating organization with Slack config:', {
       orgId: state,
       workspaceId: data.team.id,
       hasToken: !!encryptedToken,
     });
 
-    const { error: updateError } = await supabase
+    const serviceClient = createServiceRoleClient();
+    const { error: updateError } = await serviceClient
       .from('organizations')
       .update({
         slack_workspace_id: data.team.id,
