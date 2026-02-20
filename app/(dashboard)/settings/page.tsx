@@ -1,19 +1,28 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Bell, Users, Plug, Mail, CreditCard } from "lucide-react";
+import { Settings, Bell, Users, Plug, Mail, CreditCard, Shield } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getUserRole } from "@/lib/auth/permissions";
 import { SlackIntegrationCard } from "@/components/settings/SlackIntegrationCard";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
 export default async function SettingsPage() {
+  const role = await getUserRole();
+
+  // Settings are admin-only
+  if (role !== 'admin') {
+    redirect('/dashboard');
+  }
+
   const supabase = await createClient();
   const user = await getCurrentUser();
 
   if (!user) {
-    return null; // Or redirect to login
+    return null;
   }
 
   // Get user's organization
