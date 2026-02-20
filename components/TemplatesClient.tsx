@@ -19,9 +19,10 @@ type FilterType = "all" | "active" | "inactive";
 interface TemplatesClientProps {
   templates: ApprovalTemplate[];
   availableDefaultTemplates?: DefaultTemplate[];
+  isAdmin: boolean;
 }
 
-export default function TemplatesClient({ templates, availableDefaultTemplates }: TemplatesClientProps) {
+export default function TemplatesClient({ templates, availableDefaultTemplates, isAdmin }: TemplatesClientProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ApprovalTemplate | null>(null);
@@ -93,16 +94,29 @@ export default function TemplatesClient({ templates, availableDefaultTemplates }
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#1d1d1f] mb-2">Approval Templates</h1>
-          <p className="text-[#86868b]">Create and manage approval workflows</p>
+          <p className="text-[#86868b]">
+            {isAdmin ? 'Create and manage approval workflows' : 'View approval workflows'}
+          </p>
         </div>
-        <Button
-          className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New Template
-        </Button>
+        {isAdmin && (
+          <Button
+            className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Template
+          </Button>
+        )}
       </div>
+
+      {/* Read-only banner for members */}
+      {!isAdmin && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <p className="text-sm text-blue-900">
+            <strong>Read-only access:</strong> You can view templates but only admins can create or edit them. Contact your admin to make changes.
+          </p>
+        </Card>
+      )}
 
       {/* Default Templates Library */}
       {availableDefaultTemplates && availableDefaultTemplates.length > 0 && (
@@ -240,30 +254,32 @@ export default function TemplatesClient({ templates, availableDefaultTemplates }
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => handleEdit(template)}
-                  className="flex-1 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button
-                  onClick={() => handleToggleStatus(template.id, template.is_active)}
-                  variant="outline"
-                  className="border-gray-200 rounded-full"
-                >
-                  {template.is_active ? 'Deactivate' : 'Activate'}
-                </Button>
-                <Button
-                  onClick={() => handleDelete(template.id, template.name)}
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 rounded-full"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              {/* Actions - only show for admins */}
+              {isAdmin && (
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => handleEdit(template)}
+                    className="flex-1 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() => handleToggleStatus(template.id, template.is_active)}
+                    variant="outline"
+                    className="border-gray-200 rounded-full"
+                  >
+                    {template.is_active ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  <Button
+                    onClick={() => handleDelete(template.id, template.name)}
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50 rounded-full"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </Card>
           </motion.div>
         ))}
