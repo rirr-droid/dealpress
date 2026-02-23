@@ -165,6 +165,101 @@ export async function updateTemplate(id: string, input: Partial<CreateTemplateIn
 }
 
 /**
+ * Create a new approval template with specific approvers
+ */
+export async function createTemplateWithApprovers(input: CreateTemplateInput & {
+  steps: Array<TemplateStep & { approver_ids?: string[] }>;
+}) {
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
+    const orgId = await getUserOrgId();
+
+    if (!user || !orgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    if (!input.name || input.name.trim().length === 0) {
+      return { success: false, error: 'Template name is required' };
+    }
+
+    if (!input.steps || input.steps.length === 0) {
+      return { success: false, error: 'At least one approval step is required' };
+    }
+
+    // Validate that all steps have at least one approver
+    for (const step of input.steps) {
+      if (!step.approver_ids || step.approver_ids.length === 0) {
+        return { success: false, error: `Step "${step.step_name}" must have at least one approver` };
+      }
+    }
+
+    // Create the template
+    const { data: template, error: templateError } = await supabase
+      .from('approval_templates')
+      .insert({
+        organization_id: orgId,
+        name: input.name.trim(),
+        description: input.description?.trim() || null,
+        deal_amount_threshold: input.deal_amount_threshold || null,
+        is_active: input.is_active !== false,
+        created_by: user.id,
+      })
+      .select()
+      .single();
+
+    if (templateError || !template) {
+      console.error('Error creating template:', templateError);
+      return { success: false, error: 'Failed to create template' };
+    }
+
+    // Create the steps
+    for (const step of input.steps) {
+      const { data: templateStep, error: stepError } = await supabase
+        .from('template_steps')
+        .insert({
+          template_id: template.id,
+          step_name: step.step_name.trim(),
+          step_order: step.step_order,
+          approver_role: step.approver_role?.trim() || null,
+        })
+        .select()
+        .single();
+
+      if (stepError || !templateStep) {
+        console.error('Error creating template step:', stepError);
+        await supabase.from('approval_templates').delete().eq('id', template.id);
+        return { success: false, error: 'Failed to create template steps' };
+      }
+
+      // Create approver assignments
+      if (step.approver_ids && step.approver_ids.length > 0) {
+        const approvers = step.approver_ids.map((userId) => ({
+          template_step_id: templateStep.id,
+          user_id: userId,
+        }));
+
+        const { error: approversError } = await supabase
+          .from('template_step_approvers')
+          .insert(approvers);
+
+        if (approversError) {
+          console.error('Error creating approvers:', approversError);
+          await supabase.from('approval_templates').delete().eq('id', template.id);
+          return { success: false, error: 'Failed to assign approvers' };
+        }
+      }
+    }
+
+    revalidatePath('/templates');
+    return { success: true, data: template };
+  } catch (error) {
+    console.error('Error in createTemplateWithApprovers:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
  * Delete a template
  */
 export async function deleteTemplate(id: string) {

@@ -5,8 +5,9 @@ import { ApprovalTemplate } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LayoutTemplate, Plus, Clock, Users, TrendingUp, Circle, Edit, Trash2 } from "lucide-react";
+import { LayoutTemplate, Plus, Clock, Users, TrendingUp, Circle, Edit, Trash2, Wand2 } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import CreateTemplateDialog from "@/components/CreateTemplateDialog";
 import DefaultTemplateLibrary from "@/components/DefaultTemplateLibrary";
 import { deleteTemplate, toggleTemplateStatus } from "@/app/actions/templates";
@@ -99,13 +100,24 @@ export default function TemplatesClient({ templates, availableDefaultTemplates, 
           </p>
         </div>
         {isAdmin && (
-          <Button
-            className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Template
-          </Button>
+          <div className="flex gap-3">
+            <Link href="/templates/new">
+              <Button
+                className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                Visual Builder
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Quick Create
+            </Button>
+          </div>
         )}
       </div>
 
