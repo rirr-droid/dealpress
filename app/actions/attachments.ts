@@ -145,12 +145,10 @@ export async function getAttachments(requestId: string) {
       return { success: false, error: 'Unauthorized', data: [] };
     }
 
+    // Fetch attachments
     const { data: attachments, error } = await supabase
       .from('approval_attachments')
-      .select(`
-        *,
-        uploader:uploaded_by(name, email)
-      `)
+      .select('*')
       .eq('request_id', requestId)
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false });
@@ -160,7 +158,25 @@ export async function getAttachments(requestId: string) {
       return { success: false, error: 'Failed to fetch attachments', data: [] };
     }
 
-    return { success: true, data: attachments || [] };
+    if (!attachments || attachments.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    // Fetch uploader details separately
+    const uploaderIds = [...new Set(attachments.map(a => a.uploaded_by))];
+    const { data: uploaders } = await supabase
+      .from('user_profiles')
+      .select('id, name, email')
+      .in('id', uploaderIds);
+
+    // Map uploaders to attachments
+    const uploaderMap = new Map(uploaders?.map(u => [u.id, u]) || []);
+    const attachmentsWithUploaders = attachments.map(attachment => ({
+      ...attachment,
+      uploader: uploaderMap.get(attachment.uploaded_by) || { name: 'Unknown', email: '' }
+    }));
+
+    return { success: true, data: attachmentsWithUploaders };
   } catch (error) {
     console.error('Error getting attachments:', error);
     return { success: false, error: 'An unexpected error occurred', data: [] };

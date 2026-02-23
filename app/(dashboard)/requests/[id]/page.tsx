@@ -50,9 +50,9 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
     return acc;
   }, {} as Record<string, typeof stepCommentsArray[0]['comments']>);
 
-  // Fetch attachments
+  // Fetch attachments (with error handling)
   const attachmentsResult = await getAttachments(id);
-  const attachments = attachmentsResult.data || [];
+  const attachments = attachmentsResult.success ? attachmentsResult.data : [];
 
   // Check subscription tier for upload permission
   const orgId = await getUserOrgId();
