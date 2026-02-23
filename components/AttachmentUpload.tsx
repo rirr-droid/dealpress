@@ -68,8 +68,21 @@ export function AttachmentUpload({
     }, 200);
 
     try {
-      console.log('[CLIENT] Calling uploadAttachment...');
-      const result = await uploadAttachment(requestId, file);
+      console.log('[CLIENT] Converting file to base64...');
+
+      // Convert file to base64 since File objects can't be serialized
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(arrayBuffer));
+      const base64 = btoa(String.fromCharCode(...bytes));
+
+      console.log('[CLIENT] File converted, calling uploadAttachment...');
+
+      const result = await uploadAttachment(requestId, {
+        base64Data: base64,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      });
       console.log('[CLIENT] Upload result:', result);
 
       clearInterval(progressInterval);

@@ -14,12 +14,19 @@ const ALLOWED_TYPES = [
   'image/jpg',
 ];
 
+interface FileData {
+  base64Data: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+}
+
 /**
  * Upload attachment to approval request
  */
-export async function uploadAttachment(requestId: string, file: File) {
+export async function uploadAttachment(requestId: string, fileData: FileData) {
   try {
-    console.log('[UPLOAD] Starting upload:', { name: file.name, size: file.size, type: file.type });
+    console.log('[UPLOAD] Starting upload:', { name: fileData.fileName, size: fileData.fileSize, type: fileData.fileType });
 
     // Get auth
     const supabase = await createClient();
@@ -34,12 +41,12 @@ export async function uploadAttachment(requestId: string, file: File) {
     console.log('[UPLOAD] User authenticated:', user.id);
 
     // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
+    if (fileData.fileSize > MAX_FILE_SIZE) {
       return { success: false, error: 'File too large. Maximum 10MB.' };
     }
 
     // Validate file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!ALLOWED_TYPES.includes(fileData.fileType)) {
       return { success: false, error: 'Invalid file type. Use PDF, DOCX, XLSX, PNG, or JPG.' };
     }
 
@@ -78,22 +85,21 @@ export async function uploadAttachment(requestId: string, file: File) {
 
     // Create storage path
     const timestamp = Date.now();
-    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const cleanName = fileData.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storagePath = `${orgId}/${requestId}/${timestamp}-${cleanName}`;
 
     console.log('[UPLOAD] Storage path:', storagePath);
 
-    // Convert to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Convert base64 back to buffer
+    const buffer = Buffer.from(fileData.base64Data, 'base64');
 
-    console.log('[UPLOAD] Buffer created, size:', buffer.length);
+    console.log('[UPLOAD] Buffer created from base64, size:', buffer.length);
 
     // Upload to storage
     const { error: uploadError } = await supabase.storage
       .from('approval-attachments')
       .upload(storagePath, buffer, {
-        contentType: file.type,
+        contentType: fileData.fileType,
         cacheControl: '3600',
       });
 
@@ -111,9 +117,9 @@ export async function uploadAttachment(requestId: string, file: File) {
         request_id: requestId,
         organization_id: orgId,
         uploaded_by: user.id,
-        file_name: file.name,
-        file_size: file.size,
-        file_type: file.type,
+        file_name: fileData.fileName,
+        file_size: fileData.fileSize,
+        file_type: fileData.fileType,
         storage_path: storagePath,
       });
 
