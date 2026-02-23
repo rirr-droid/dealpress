@@ -67,13 +67,13 @@ export async function uploadAttachment(
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storagePath = `${orgId}/${requestId}/${timestamp}-${sanitizedFileName}`;
 
-    // Upload to Supabase Storage
-    const arrayBuffer = await file.arrayBuffer();
+    // Upload to Supabase Storage (use file directly, not arrayBuffer for better performance)
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('approval-attachments')
-      .upload(storagePath, arrayBuffer, {
+      .upload(storagePath, file, {
         contentType: file.type,
         upsert: false,
+        cacheControl: '3600',
       });
 
     if (uploadError) {

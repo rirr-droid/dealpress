@@ -45,6 +45,7 @@ export function AttachmentUpload({
   onUpdate,
 }: AttachmentUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,14 +54,35 @@ export function AttachmentUpload({
     if (!file) return;
 
     setUploading(true);
+    setUploadProgress(0);
     setError(null);
 
-    const result = await uploadAttachment(requestId, file);
+    // Simulate progress since we can't track actual upload progress with server actions
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 90) return prev; // Stop at 90% until upload completes
+        return prev + 10;
+      });
+    }, 200);
 
-    if (!result.success) {
-      setError(result.error || 'Upload failed');
-    } else {
-      onUpdate();
+    try {
+      const result = await uploadAttachment(requestId, file);
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (!result.success) {
+        setError(result.error || 'Upload failed');
+      } else {
+        // Small delay to show 100% before resetting
+        setTimeout(() => {
+          onUpdate();
+          setUploadProgress(0);
+        }, 500);
+      }
+    } catch (err) {
+      clearInterval(progressInterval);
+      setError('Upload failed unexpectedly');
     }
 
     setUploading(false);
@@ -155,6 +177,21 @@ export function AttachmentUpload({
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
+
+      {uploading && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-blue-900">Uploading file...</p>
+            <p className="text-sm font-semibold text-blue-900">{uploadProgress}%</p>
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-[#0071e3] h-full rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
         </div>
       )}
 
