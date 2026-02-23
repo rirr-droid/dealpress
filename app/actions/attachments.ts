@@ -22,11 +22,14 @@ export async function uploadAttachment(
   file: File
 ) {
   try {
+    console.log('Upload started:', file.name, file.size, file.type);
+
     const supabase = await createClient();
     const user = await getCurrentUser();
     const orgId = await getUserOrgId();
 
     if (!user || !orgId) {
+      console.error('Upload failed: Unauthorized');
       return { success: false, error: 'Unauthorized' };
     }
 
@@ -36,6 +39,8 @@ export async function uploadAttachment(
       .select('subscription_tier')
       .eq('id', orgId)
       .single();
+
+    console.log('Org subscription:', org?.subscription_tier);
 
     if (org?.subscription_tier !== 'pro' && org?.subscription_tier !== 'enterprise') {
       return { success: false, error: 'Attachments are a Pro feature. Upgrade to enable.' };
@@ -49,6 +54,8 @@ export async function uploadAttachment(
     if (!ALLOWED_TYPES.includes(file.type)) {
       return { success: false, error: 'Invalid file type. Allowed: PDF, DOCX, XLSX, PNG, JPG' };
     }
+
+    console.log('File validation passed');
 
     // Verify request belongs to user's org
     const { data: request } = await supabase
@@ -67,21 +74,32 @@ export async function uploadAttachment(
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storagePath = `${orgId}/${requestId}/${timestamp}-${sanitizedFileName}`;
 
-    // Upload to Supabase Storage (use file directly, not arrayBuffer for better performance)
+    // Convert file to buffer for upload
+    // Note: Server actions require serializable data, so we convert File to Buffer
+    console.log('Converting file to buffer...');
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    console.log('Buffer created, size:', buffer.length);
+
+    // Upload to Supabase Storage
+    console.log('Uploading to storage:', storagePath);
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('approval-attachments')
-      .upload(storagePath, file, {
+      .upload(storagePath, buffer, {
         contentType: file.type,
         upsert: false,
         cacheControl: '3600',
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
-      return { success: false, error: 'Failed to upload file' };
+      console.error('Storage upload error:', uploadError);
+      return { success: false, error: `Failed to upload file: ${uploadError.message}` };
     }
 
+    console.log('Upload successful:', uploadData);
+
     // Save attachment metadata
+    console.log('Saving metadata to database...');
     const { data: attachment, error: dbError } = await supabase
       .from('approval_attachments')
       .insert({
@@ -102,14 +120,15 @@ export async function uploadAttachment(
       await supabase.storage
         .from('approval-attachments')
         .remove([storagePath]);
-      return { success: false, error: 'Failed to save attachment' };
+      return { success: false, error: `Failed to save attachment: ${dbError.message}` };
     }
 
+    console.log('Upload complete:', attachment.id);
     revalidatePath(`/requests/${requestId}`);
     return { success: true, data: attachment };
   } catch (error) {
-    console.error('Error uploading attachment:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Unexpected error uploading attachment:', error);
+    return { success: false, error: `An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
 }
 
