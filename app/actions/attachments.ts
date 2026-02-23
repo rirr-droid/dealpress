@@ -163,7 +163,8 @@ export async function getAttachments(requestId: string) {
     }
 
     // Fetch uploader details separately
-    const uploaderIds = [...new Set(attachments.map(a => a.uploaded_by))];
+    const uploaderIdsSet = new Set(attachments.map(a => a.uploaded_by));
+    const uploaderIds = Array.from(uploaderIdsSet);
     const { data: uploaders } = await supabase
       .from('user_profiles')
       .select('id, name, email')
