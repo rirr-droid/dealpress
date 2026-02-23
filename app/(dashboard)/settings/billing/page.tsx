@@ -44,8 +44,8 @@ export default async function BillingPage() {
             </div>
             <p className="text-sm text-[#86868b]">
               {isPro
-                ? 'Unlimited requests, templates, and up to 50 users'
-                : '5 requests/month, 2 templates, 1 user'}
+                ? 'Unlimited requests, templates, and users'
+                : '5 requests/month, unlimited templates, 1 user'}
             </p>
           </div>
         </div>
@@ -137,19 +137,27 @@ export default async function BillingPage() {
               <p className="text-sm text-[#86868b]">Team Members</p>
               <p className="text-2xl font-bold text-[#1d1d1f]">
                 {usage.usersCount}
-                <span className="text-sm text-[#86868b] font-normal">
-                  {' '}/ {usage.usersLimit}
-                </span>
+                {usage.usersLimit !== -1 && (
+                  <span className="text-sm text-[#86868b] font-normal">
+                    {' '}/ {usage.usersLimit}
+                  </span>
+                )}
               </p>
             </div>
           </div>
-          <Progress
-            value={(usage.usersCount / usage.usersLimit) * 100}
-            className="h-2 mb-2"
-          />
-          <p className="text-xs text-[#86868b]">
-            {usage.usersLimit - usage.usersCount} remaining
-          </p>
+          {usage.usersLimit !== -1 ? (
+            <>
+              <Progress
+                value={(usage.usersCount / usage.usersLimit) * 100}
+                className="h-2 mb-2"
+              />
+              <p className="text-xs text-[#86868b]">
+                {usage.usersLimit - usage.usersCount} remaining
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-[#86868b]">Unlimited</p>
+          )}
         </Card>
       </div>
 
@@ -170,15 +178,15 @@ export default async function BillingPage() {
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-[#1d1d1f]">2 approval templates</span>
+                <span className="text-sm text-[#1d1d1f]">Unlimited templates</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-[#1d1d1f]">1 team member</span>
+                <span className="text-sm text-[#1d1d1f]">1 user</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-[#1d1d1f]">Basic email notifications</span>
+                <span className="text-sm text-[#1d1d1f]">Email notifications</span>
               </li>
             </ul>
           </Card>
@@ -206,16 +214,20 @@ export default async function BillingPage() {
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-[#0071e3] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-[#1d1d1f] font-medium">Up to 50 team members</span>
+                <span className="text-sm text-[#1d1d1f] font-medium">Unlimited users</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-[#0071e3] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-[#1d1d1f] font-medium">Priority email support</span>
+                <span className="text-sm text-[#1d1d1f] font-medium">Slack integration</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-[#0071e3] flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-[#1d1d1f] font-medium">SLA tracking</span>
               </li>
               <li className="flex items-start gap-2">
                 <TrendingUp className="w-5 h-5 text-[#0071e3] flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-[#1d1d1f] font-medium">
-                  Advanced analytics (coming soon)
+                  Analytics dashboard
                 </span>
               </li>
             </ul>

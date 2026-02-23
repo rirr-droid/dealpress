@@ -190,8 +190,10 @@ export default function BillingActions({
               <strong>What you will lose:</strong>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Unlimited approval requests (back to 5/month)</li>
-                <li>Unlimited templates (back to 2)</li>
-                <li>Up to 50 users (back to 1)</li>
+                <li>Unlimited users (back to 1)</li>
+                <li>Slack integration</li>
+                <li>SLA tracking</li>
+                <li>Analytics dashboard</li>
               </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>

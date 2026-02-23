@@ -79,14 +79,20 @@ export function getLimitsForPlan(plan: string) {
       return {
         requests: -1, // Unlimited
         templates: -1, // Unlimited
-        users: 50,
+        users: -1, // Unlimited users
+      };
+    case 'enterprise':
+      return {
+        requests: -1, // Unlimited
+        templates: -1, // Unlimited
+        users: -1, // Unlimited
       };
     case 'free':
     default:
       return {
-        requests: 5,
-        templates: 2,
-        users: 1,
+        requests: 5, // 5 requests per month
+        templates: -1, // Unlimited templates (changed from 2)
+        users: 1, // 1 user only
       };
   }
 }
