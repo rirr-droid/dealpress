@@ -17,49 +17,20 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface BillingActionsProps {
-  isPro: boolean;
+  currentPlan: string;
   subscriptionStatus: string;
   stripeCustomerId?: string | null;
 }
 
 export default function BillingActions({
-  isPro,
+  currentPlan,
   subscriptionStatus,
   stripeCustomerId,
 }: BillingActionsProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleUpgrade = async () => {
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to start checkout',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-    }
-  };
+  const isPaidPlan = ['professional', 'business', 'enterprise'].includes(currentPlan);
 
   const handleManageBilling = async () => {
     if (!stripeCustomerId) {
@@ -101,26 +72,9 @@ export default function BillingActions({
     }
   };
 
-  if (!isPro) {
-    return (
-      <Button
-        onClick={handleUpgrade}
-        disabled={isLoading}
-        className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Loading...
-          </>
-        ) : (
-          <>
-            <CreditCard className="mr-2 h-4 w-4" />
-            Upgrade to Pro - $10/month
-          </>
-        )}
-      </Button>
-    );
+  // Starter plan shows nothing here - PricingCards component handles upgrades
+  if (currentPlan === 'starter') {
+    return null;
   }
 
   if (subscriptionStatus === 'past_due') {
@@ -189,11 +143,25 @@ export default function BillingActions({
               <br />
               <strong>What you will lose:</strong>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Unlimited approval requests (back to 5/month)</li>
-                <li>Unlimited users (back to 1)</li>
-                <li>Slack integration</li>
-                <li>SLA tracking</li>
-                <li>Analytics dashboard</li>
+                {currentPlan === 'professional' && (
+                  <>
+                    <li>50 approval requests/month (back to 3/month)</li>
+                    <li>Unlimited workflows (back to 1)</li>
+                    <li>Up to 5 users (back to 1)</li>
+                    <li>Visual workflow builder</li>
+                    <li>Slack integration</li>
+                  </>
+                )}
+                {currentPlan === 'business' && (
+                  <>
+                    <li>Unlimited approval requests (back to 3/month)</li>
+                    <li>Unlimited workflows (back to 1)</li>
+                    <li>Up to 15 users (back to 1)</li>
+                    <li>Advanced analytics</li>
+                    <li>SLA tracking</li>
+                    <li>Custom branding</li>
+                  </>
+                )}
               </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>

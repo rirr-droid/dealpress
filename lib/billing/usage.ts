@@ -16,17 +16,17 @@ export async function getUsage(organizationId: string) {
   if (!org) {
     return {
       requestsUsed: 0,
-      requestsLimit: 5, // Free tier default
+      requestsLimit: 3, // Starter tier default
       templatesUsed: 0,
-      templatesLimit: 2,
+      templatesLimit: 1,
       usersCount: 0,
       usersLimit: 1,
-      plan: 'free' as const,
+      plan: 'starter' as const,
       status: 'active' as const,
     };
   }
 
-  const plan = org.subscription_plan || 'free';
+  const plan = org.subscription_plan || 'starter';
   const status = org.subscription_status || 'active';
 
   // Count requests in current billing period
@@ -75,23 +75,30 @@ export async function getUsage(organizationId: string) {
  */
 export function getLimitsForPlan(plan: string) {
   switch (plan) {
-    case 'pro':
+    case 'professional':
       return {
-        requests: -1, // Unlimited
-        templates: -1, // Unlimited
-        users: -1, // Unlimited users
+        requests: 50, // 50 requests per month
+        templates: -1, // Unlimited templates
+        users: 5, // Up to 5 users
+      };
+    case 'business':
+      return {
+        requests: -1, // Unlimited requests
+        templates: -1, // Unlimited templates
+        users: 15, // Up to 15 users
       };
     case 'enterprise':
       return {
-        requests: -1, // Unlimited
-        templates: -1, // Unlimited
-        users: -1, // Unlimited
+        requests: -1, // Unlimited requests
+        templates: -1, // Unlimited templates
+        users: -1, // Unlimited users
       };
-    case 'free':
+    case 'starter':
+    case 'free': // Legacy support
     default:
       return {
-        requests: 5, // 5 requests per month
-        templates: -1, // Unlimited templates (changed from 2)
+        requests: 3, // Only 3 requests per month (down from 5)
+        templates: 1, // Only 1 template (down from unlimited)
         users: 1, // 1 user only
       };
   }

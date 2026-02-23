@@ -25,26 +25,36 @@ export const stripe = getStripe()!;
 export const STRIPE_CONFIG = {
   // Update these with your actual Stripe Price IDs after creating products
   prices: {
-    pro: process.env.STRIPE_PRO_PRICE_ID || 'price_xxx', // $10/month Pro plan
+    professional: process.env.STRIPE_PROFESSIONAL_PRICE_ID || 'price_xxx', // $49/month Professional plan
+    business: process.env.STRIPE_BUSINESS_PRICE_ID || 'price_xxx', // $99/month Business plan
+    // Legacy support
+    pro: process.env.STRIPE_PRO_PRICE_ID || process.env.STRIPE_PROFESSIONAL_PRICE_ID || 'price_xxx',
   },
   products: {
-    pro: process.env.STRIPE_PRO_PRODUCT_ID || 'prod_xxx',
+    professional: process.env.STRIPE_PROFESSIONAL_PRODUCT_ID || 'prod_xxx',
+    business: process.env.STRIPE_BUSINESS_PRODUCT_ID || 'prod_xxx',
+    // Legacy support
+    pro: process.env.STRIPE_PRO_PRODUCT_ID || process.env.STRIPE_PROFESSIONAL_PRODUCT_ID || 'prod_xxx',
   },
 } as const;
 
 /**
- * Create a Stripe checkout session for Pro plan upgrade
+ * Create a Stripe checkout session for plan upgrade
  */
 export async function createCheckoutSession({
   customerId,
   customerEmail,
   organizationId,
+  priceId,
+  plan,
   successUrl,
   cancelUrl,
 }: {
   customerId?: string;
   customerEmail: string;
   organizationId: string;
+  priceId: string;
+  plan: 'professional' | 'business';
   successUrl: string;
   cancelUrl: string;
 }) {
@@ -56,7 +66,7 @@ export async function createCheckoutSession({
     mode: 'subscription',
     line_items: [
       {
-        price: STRIPE_CONFIG.prices.pro,
+        price: priceId,
         quantity: 1,
       },
     ],
@@ -64,10 +74,12 @@ export async function createCheckoutSession({
     cancel_url: cancelUrl,
     metadata: {
       organization_id: organizationId,
+      plan: plan,
     },
     subscription_data: {
       metadata: {
         organization_id: organizationId,
+        plan: plan,
       },
     },
     allow_promotion_codes: true,

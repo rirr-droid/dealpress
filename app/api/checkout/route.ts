@@ -16,22 +16,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
 
-    // Check if already subscribed
-    if (organization.subscription_plan === 'pro' && organization.subscription_status === 'active') {
+    // Get the requested plan from request body
+    const body = await request.json();
+    const requestedPlan = body.plan as 'professional' | 'business' | undefined;
+
+    if (!requestedPlan || !['professional', 'business'].includes(requestedPlan)) {
       return NextResponse.json(
-        { error: 'Already subscribed to Pro plan' },
+        { error: 'Invalid plan. Must be "professional" or "business"' },
+        { status: 400 }
+      );
+    }
+
+    // Check if already subscribed to this or a higher plan
+    const planHierarchy = { starter: 0, professional: 1, business: 2, enterprise: 3 };
+    const currentPlanLevel = planHierarchy[organization.subscription_plan as keyof typeof planHierarchy] || 0;
+    const requestedPlanLevel = planHierarchy[requestedPlan];
+
+    if (currentPlanLevel >= requestedPlanLevel && organization.subscription_status === 'active') {
+      return NextResponse.json(
+        { error: `Already subscribed to ${organization.subscription_plan} plan` },
         { status: 400 }
       );
     }
 
     const origin = request.headers.get('origin') || 'http://localhost:3000';
 
+    // Get the price ID for the requested plan
+    const priceId = requestedPlan === 'professional'
+      ? process.env.STRIPE_PROFESSIONAL_PRICE_ID
+      : process.env.STRIPE_BUSINESS_PRICE_ID;
+
+    if (!priceId) {
+      return NextResponse.json(
+        { error: 'Plan not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
     // Create Stripe checkout session
     const session = await createCheckoutSession({
       customerId: organization.stripe_customer_id || undefined,
       customerEmail: user.email!,
       organizationId: organization.id,
-      successUrl: `${origin}/settings/billing?success=true`,
+      priceId,
+      plan: requestedPlan,
+      successUrl: `${origin}/settings/billing?success=true&plan=${requestedPlan}`,
       cancelUrl: `${origin}/settings/billing?canceled=true`,
     });
 

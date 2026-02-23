@@ -101,12 +101,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     session.subscription as string
   );
 
+  // Get plan from metadata, default to 'professional' for backwards compatibility
+  const plan = subscription.metadata?.plan || session.metadata?.plan || 'professional';
+
   await supabase
     .from('organizations')
     .update({
       stripe_customer_id: session.customer as string,
       stripe_subscription_id: subscription.id,
-      subscription_plan: 'pro',
+      subscription_plan: plan,
       subscription_status: subscription.status,
       current_period_start: new Date((subscription as unknown as { current_period_start: number }).current_period_start * 1000).toISOString(),
       current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
@@ -140,9 +143,9 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
   };
 
-  // Determine plan based on subscription status
-  if (subscription.status === 'active') {
-    updateData.subscription_plan = 'pro';
+  // Get plan from metadata if available
+  if (subscription.metadata?.plan && subscription.status === 'active') {
+    updateData.subscription_plan = subscription.metadata.plan;
   }
 
   await supabase
@@ -168,7 +171,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   await supabase
     .from('organizations')
     .update({
-      subscription_plan: 'free',
+      subscription_plan: 'starter',
       subscription_status: 'canceled',
     })
     .eq('id', org.id);

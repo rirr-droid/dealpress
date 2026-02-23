@@ -2,7 +2,7 @@
 ALTER TABLE organizations
 ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT UNIQUE,
 ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE,
-ADD COLUMN IF NOT EXISTS subscription_plan TEXT DEFAULT 'free' CHECK (subscription_plan IN ('free', 'pro', 'enterprise')),
+ADD COLUMN IF NOT EXISTS subscription_plan TEXT DEFAULT 'starter' CHECK (subscription_plan IN ('starter', 'professional', 'business', 'enterprise')),
 ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active' CHECK (subscription_status IN ('active', 'canceled', 'past_due', 'incomplete', 'trialing', 'unpaid')),
 ADD COLUMN IF NOT EXISTS current_period_start TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ;
@@ -22,7 +22,7 @@ ON organizations(subscription_plan);
 -- Add helpful comments
 COMMENT ON COLUMN organizations.stripe_customer_id IS 'Stripe customer ID for billing';
 COMMENT ON COLUMN organizations.stripe_subscription_id IS 'Active Stripe subscription ID';
-COMMENT ON COLUMN organizations.subscription_plan IS 'Current subscription plan: free, pro, or enterprise';
+COMMENT ON COLUMN organizations.subscription_plan IS 'Current subscription plan: starter (free), professional ($49/mo), business ($99/mo), or enterprise (custom)';
 COMMENT ON COLUMN organizations.subscription_status IS 'Stripe subscription status';
 COMMENT ON COLUMN organizations.current_period_start IS 'Current billing period start date';
 COMMENT ON COLUMN organizations.current_period_end IS 'Current billing period end date';
