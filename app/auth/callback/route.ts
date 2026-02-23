@@ -30,38 +30,59 @@ export async function GET(request: Request) {
                         user.email?.split('@')[0] ||
                         'User';
 
-        // Extract company from email domain
-        const emailDomain = user.email?.split('@')[1] || '';
-        const companyFromEmail = emailDomain.replace(/\.(com|io|net|org)$/, '');
-        const orgName = company ||
-                       (companyFromEmail !== 'gmail' && companyFromEmail !== 'yahoo' && companyFromEmail !== 'hotmail'
-                         ? companyFromEmail.charAt(0).toUpperCase() + companyFromEmail.slice(1)
-                         : `${userName}'s Organization`);
-
-        // Create organization first
-        const { data: org, error: orgError } = await supabase
-          .from('organizations')
-          .insert({
-            name: orgName,
-          })
-          .select()
+        // Check for pending invitations BEFORE creating organization
+        const { data: pendingInvitation } = await supabase
+          .from('team_invitations')
+          .select('id, organization_id')
+          .eq('email', user.email!)
+          .is('accepted_at', null)
+          .gt('expires_at', new Date().toISOString())
           .single();
 
-        if (!orgError && org) {
-          // Create user profile
+        if (pendingInvitation) {
+          // User has a pending invitation - just create profile, don't create org
+          // The invitation acceptance flow will add them to the organization
           await supabase.from('user_profiles').insert({
             id: user.id,
             email: user.email,
             name: userName,
             avatar_url: user.user_metadata?.avatar_url || null,
           });
+        } else {
+          // No pending invitation - create new organization for this user
+          // Extract company from email domain
+          const emailDomain = user.email?.split('@')[1] || '';
+          const companyFromEmail = emailDomain.replace(/\.(com|io|net|org)$/, '');
+          const orgName = company ||
+                         (companyFromEmail !== 'gmail' && companyFromEmail !== 'yahoo' && companyFromEmail !== 'hotmail'
+                           ? companyFromEmail.charAt(0).toUpperCase() + companyFromEmail.slice(1)
+                           : `${userName}'s Organization`);
 
-          // Add user as admin to organization
-          await supabase.from('organization_members').insert({
-            organization_id: org.id,
-            user_id: user.id,
-            role: 'admin',
-          });
+          // Create organization first
+          const { data: org, error: orgError } = await supabase
+            .from('organizations')
+            .insert({
+              name: orgName,
+            })
+            .select()
+            .single();
+
+          if (!orgError && org) {
+            // Create user profile
+            await supabase.from('user_profiles').insert({
+              id: user.id,
+              email: user.email,
+              name: userName,
+              avatar_url: user.user_metadata?.avatar_url || null,
+            });
+
+            // Add user as admin to organization
+            await supabase.from('organization_members').insert({
+              organization_id: org.id,
+              user_id: user.id,
+              role: 'admin',
+            });
+          }
         }
       }
 
