@@ -119,34 +119,76 @@ export default function LandingPage() {
                 <div className="w-3 h-3 rounded-full bg-[#ff3b30]"></div>
                 <div className="w-3 h-3 rounded-full bg-[#ff9500]"></div>
                 <div className="w-3 h-3 rounded-full bg-[#34c759]"></div>
+                <div className="ml-4 text-xs text-gray-500 font-medium">dealpress.ai/dashboard</div>
               </div>
               <div className="p-8 bg-gradient-to-br from-blue-50/50 to-purple-50/30">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 h-12 bg-gradient-to-r from-blue-100 to-blue-50 rounded-xl animate-pulse"></div>
-                    <div className="w-24 h-12 bg-green-100 rounded-xl"></div>
+                <div className="space-y-6">
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="h-8 w-48 bg-gradient-to-r from-[#1d1d1f] to-[#1d1d1f]/80 rounded-lg mb-2 flex items-center px-3">
+                        <span className="text-white text-sm font-bold">Enterprise Deal - $250k</span>
+                      </div>
+                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="px-6 py-2 bg-[#34c759] rounded-full">
+                      <span className="text-white text-sm font-semibold">Approved</span>
+                    </div>
                   </div>
+
+                  {/* Timeline */}
+                  <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-4">
+                      {/* Step 1 - Completed */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-[#34c759] flex items-center justify-center">
+                          <CheckCircle className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-xs text-[#34c759] font-medium">Sales Manager</div>
+                      </div>
+                      <div className="flex-1 h-1 bg-[#34c759] rounded"></div>
+
+                      {/* Step 2 - Completed */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-[#34c759] flex items-center justify-center">
+                          <CheckCircle className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-xs text-[#34c759] font-medium">Finance</div>
+                      </div>
+                      <div className="flex-1 h-1 bg-[#34c759] rounded"></div>
+
+                      {/* Step 3 - Current */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-[#0071e3] flex items-center justify-center animate-pulse">
+                          <Clock className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-xs text-[#0071e3] font-medium">VP Sales</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="h-32 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg mb-2"></div>
-                      <div className="space-y-2">
-                        <div className="h-3 bg-gray-100 rounded"></div>
-                        <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg mb-3 flex items-center justify-center">
+                        <TrendingUp className="w-5 h-5 text-[#0071e3]" />
                       </div>
+                      <div className="text-2xl font-bold text-[#1d1d1f] mb-1">$250k</div>
+                      <div className="text-xs text-[#6e6e73]">Deal Value</div>
                     </div>
-                    <div className="h-32 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                      <div className="w-8 h-8 bg-purple-100 rounded-lg mb-2"></div>
-                      <div className="space-y-2">
-                        <div className="h-3 bg-gray-100 rounded"></div>
-                        <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg mb-3 flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-[#0071e3]" />
                       </div>
+                      <div className="text-2xl font-bold text-[#1d1d1f] mb-1">4.2h</div>
+                      <div className="text-xs text-[#6e6e73]">Approval Time</div>
                     </div>
-                    <div className="h-32 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                      <div className="w-8 h-8 bg-green-100 rounded-lg mb-2"></div>
-                      <div className="space-y-2">
-                        <div className="h-3 bg-gray-100 rounded"></div>
-                        <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg mb-3 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-[#34c759]" />
                       </div>
+                      <div className="text-2xl font-bold text-[#1d1d1f] mb-1">3/3</div>
+                      <div className="text-xs text-[#6e6e73]">Approvers</div>
                     </div>
                   </div>
                 </div>
