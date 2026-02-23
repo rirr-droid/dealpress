@@ -30,7 +30,14 @@ export async function GET(request: Request) {
                         user.email?.split('@')[0] ||
                         'User';
 
-        // Check for pending invitations BEFORE creating organization
+        // GUARDRAIL 1: Check if user already belongs to an organization
+        const { data: existingMembership } = await supabase
+          .from('organization_members')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .single();
+
+        // GUARDRAIL 2: Check for pending invitations BEFORE creating organization
         const { data: pendingInvitation } = await supabase
           .from('team_invitations')
           .select('id, organization_id')
@@ -39,7 +46,15 @@ export async function GET(request: Request) {
           .gt('expires_at', new Date().toISOString())
           .single();
 
-        if (pendingInvitation) {
+        if (existingMembership) {
+          // User already belongs to an organization - just create profile if missing
+          await supabase.from('user_profiles').insert({
+            id: user.id,
+            email: user.email,
+            name: userName,
+            avatar_url: user.user_metadata?.avatar_url || null,
+          });
+        } else if (pendingInvitation) {
           // User has a pending invitation - just create profile, don't create org
           // The invitation acceptance flow will add them to the organization
           await supabase.from('user_profiles').insert({
