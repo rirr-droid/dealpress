@@ -45,6 +45,14 @@ export async function POST(request: NextRequest) {
 
     const { email, password, name, companyName } = validation.data;
 
+    // Require company name only if not joining via invitation
+    if (!invitationToken && !companyName) {
+      return NextResponse.json(
+        { error: 'Company name is required' },
+        { status: 400 }
+      );
+    }
+
     // Create admin client using service role key (server-side only)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

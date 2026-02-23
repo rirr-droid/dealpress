@@ -44,7 +44,7 @@ export const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
-  companyName: z.string().min(1, 'Company name is required').max(100, 'Company name is too long'),
+  companyName: z.string().min(1, 'Company name is required').max(100, 'Company name is too long').optional(),
 });
 
 // Template creation validation
