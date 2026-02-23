@@ -74,7 +74,22 @@ export function ApproverSelector({
 
       {/* Member List */}
       <div className="space-y-2 max-h-60 overflow-y-auto">
-        {availableMembers.length === 0 ? (
+        {teamMembers.length === 0 ? (
+          <div className="text-center py-6">
+            <UserIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm font-medium text-[#1d1d1f] mb-1">No team members yet</p>
+            <p className="text-xs text-[#86868b] mb-3">
+              Invite people to your team to assign them as approvers
+            </p>
+            <Button
+              onClick={() => window.location.href = '/settings/team'}
+              size="sm"
+              className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
+            >
+              Go to Team Settings
+            </Button>
+          </div>
+        ) : availableMembers.length === 0 ? (
           <div className="text-center py-6">
             <UserIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
             <p className="text-sm text-[#86868b]">
