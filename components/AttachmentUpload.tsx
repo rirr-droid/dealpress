@@ -53,6 +53,8 @@ export function AttachmentUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('[CLIENT] File selected:', file.name, file.size, file.type);
+
     setUploading(true);
     setUploadProgress(0);
     setError(null);
@@ -66,14 +68,18 @@ export function AttachmentUpload({
     }, 200);
 
     try {
+      console.log('[CLIENT] Calling uploadAttachment...');
       const result = await uploadAttachment(requestId, file);
+      console.log('[CLIENT] Upload result:', result);
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
       if (!result.success) {
+        console.error('[CLIENT] Upload failed:', result.error);
         setError(result.error || 'Upload failed');
       } else {
+        console.log('[CLIENT] Upload successful!');
         // Small delay to show 100% before resetting
         setTimeout(() => {
           onUpdate();
@@ -81,8 +87,9 @@ export function AttachmentUpload({
         }, 500);
       }
     } catch (err) {
+      console.error('[CLIENT] Exception during upload:', err);
       clearInterval(progressInterval);
-      setError('Upload failed unexpectedly');
+      setError('Upload failed unexpectedly: ' + (err instanceof Error ? err.message : 'Unknown'));
     }
 
     setUploading(false);
