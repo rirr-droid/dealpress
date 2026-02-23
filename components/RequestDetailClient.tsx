@@ -25,14 +25,37 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ApprovalRequest } from "@/types";
 import type { StepComment } from "@/lib/db/comments";
+import { AttachmentUpload } from "@/components/AttachmentUpload";
+
+interface Attachment {
+  id: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  created_at: string;
+  uploader: {
+    name: string;
+    email: string;
+  };
+}
 
 interface RequestDetailClientProps {
   request: ApprovalRequest;
   currentUserId: string;
   stepComments?: Record<string, StepComment[]>;
+  attachments?: Attachment[];
+  canUpload?: boolean;
+  canDelete?: boolean;
 }
 
-export default function RequestDetailClient({ request, currentUserId, stepComments }: RequestDetailClientProps) {
+export default function RequestDetailClient({
+  request,
+  currentUserId,
+  stepComments,
+  attachments = [],
+  canUpload = false,
+  canDelete = false,
+}: RequestDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -332,6 +355,15 @@ export default function RequestDetailClient({ request, currentUserId, stepCommen
             )}
           </div>
         </Card>
+
+        {/* Attachments */}
+        <AttachmentUpload
+          requestId={request.id}
+          attachments={attachments}
+          canUpload={canUpload}
+          canDelete={canDelete}
+          onUpdate={() => router.refresh()}
+        />
 
         {/* Approval Tracker (HERO COMPONENT) */}
         <ApprovalTracker

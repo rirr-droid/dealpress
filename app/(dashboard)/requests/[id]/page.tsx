@@ -1,9 +1,12 @@
 import { getRequest } from "@/lib/db/requests";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUserOrgId } from "@/lib/auth";
+import { getUserRole } from "@/lib/auth/permissions";
 import { getStepComments } from "@/lib/db/comments";
+import { getAttachments } from "@/app/actions/attachments";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import RequestDetailClient from "@/components/RequestDetailClient";
 
 export const dynamic = 'force-dynamic';
@@ -47,11 +50,33 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
     return acc;
   }, {} as Record<string, typeof stepCommentsArray[0]['comments']>);
 
+  // Fetch attachments
+  const attachmentsResult = await getAttachments(id);
+  const attachments = attachmentsResult.data || [];
+
+  // Check subscription tier for upload permission
+  const orgId = await getUserOrgId();
+  const supabase = await createClient();
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('subscription_tier')
+    .eq('id', orgId)
+    .single();
+
+  const canUpload = org?.subscription_tier === 'pro' || org?.subscription_tier === 'enterprise';
+
+  // Check if user is admin for delete permission
+  const userRole = await getUserRole();
+  const canDelete = userRole === 'admin';
+
   return (
     <RequestDetailClient
       request={request}
       currentUserId={user.id}
       stepComments={stepComments}
+      attachments={attachments}
+      canUpload={canUpload}
+      canDelete={canDelete}
     />
   );
 }
