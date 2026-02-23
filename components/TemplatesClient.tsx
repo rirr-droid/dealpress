@@ -23,13 +23,16 @@ interface TemplatesClientProps {
   isAdmin: boolean;
 }
 
-export default function TemplatesClient({ templates, availableDefaultTemplates, isAdmin }: TemplatesClientProps) {
+export default function TemplatesClient({ templates, availableDefaultTemplates, isAdmin, teamMembersCount }: TemplatesClientProps & { teamMembersCount?: number }) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ApprovalTemplate | null>(null);
   const [showDefaultTemplates, setShowDefaultTemplates] = useState(templates.length === 0);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Visual builder requires at least 2 team members (user + 1 approver)
+  const hasEnoughMembers = (teamMembersCount ?? 0) >= 2;
 
   const filteredTemplates = filter === "all"
     ? templates
@@ -101,14 +104,25 @@ export default function TemplatesClient({ templates, availableDefaultTemplates, 
         </div>
         {isAdmin && (
           <div className="flex gap-3">
-            <Link href="/templates/new">
+            {hasEnoughMembers ? (
+              <Link href="/templates/new">
+                <Button
+                  className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
+                >
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  Visual Builder
+                </Button>
+              </Link>
+            ) : (
               <Button
-                className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full"
+                disabled
+                className="bg-gray-300 text-gray-500 rounded-full cursor-not-allowed"
+                title="Invite at least one team member to use the Visual Builder"
               >
                 <Wand2 className="mr-2 h-4 w-4" />
                 Visual Builder
               </Button>
-            </Link>
+            )}
             <Button
               variant="outline"
               className="rounded-full"
@@ -127,6 +141,30 @@ export default function TemplatesClient({ templates, availableDefaultTemplates, 
           <p className="text-sm text-blue-900">
             <strong>Read-only access:</strong> You can view templates but only admins can create or edit them. Contact your admin to make changes.
           </p>
+        </Card>
+      )}
+
+      {/* Visual Builder requires team members */}
+      {isAdmin && !hasEnoughMembers && (
+        <Card className="p-4 bg-purple-50 border-purple-200">
+          <div className="flex items-start gap-3">
+            <Users className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-purple-900 mb-1">
+                Visual Builder Locked
+              </p>
+              <p className="text-sm text-purple-800 mb-3">
+                The Visual Builder requires at least one other team member to assign as an approver.
+                Invite team members to unlock this feature.
+              </p>
+              <Link href="/settings/team">
+                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white rounded-full">
+                  <Users className="w-4 h-4 mr-2" />
+                  Invite Team Members
+                </Button>
+              </Link>
+            </div>
+          </div>
         </Card>
       )}
 
