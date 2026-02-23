@@ -31,9 +31,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const { invitationToken, ...signupData } = body;
 
     // Validate input with Zod
-    const validation = signupSchema.safeParse(body);
+    const validation = signupSchema.safeParse(signupData);
     if (!validation.success) {
       const errors = validation.error.issues.map(issue => issue.message).join(', ');
       return NextResponse.json(
@@ -69,6 +70,24 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    // If invitation token provided, accept the invitation
+    if (invitationToken) {
+      try {
+        const { data: acceptResult, error: acceptError } = await supabase.rpc('accept_team_invitation', {
+          p_token: invitationToken,
+          p_user_id: data.user.id,
+        });
+
+        if (acceptError) {
+          console.error('Error accepting invitation:', acceptError);
+          // User was created but invitation acceptance failed
+          // Return success anyway - they can be manually added
+        }
+      } catch (invError) {
+        console.error('Exception accepting invitation:', invError);
+      }
     }
 
     return NextResponse.json({
