@@ -78,6 +78,8 @@ export async function GET(request: Request) {
             .from('organizations')
             .insert({
               name: orgName,
+              subscription_plan: 'starter',
+              subscription_status: 'active',
             })
             .select()
             .single();
