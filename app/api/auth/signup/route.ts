@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const userId = data.user.id;
+
     // If invitation token provided, accept the invitation
     if (invitationToken) {
       try {
@@ -98,6 +100,66 @@ export async function POST(request: NextRequest) {
         }
       } catch (invError) {
         console.error('Exception accepting invitation:', invError);
+      }
+    } else {
+      // No invitation - create new organization and add user as admin
+      try {
+        // Generate unique slug
+        const orgSlug = (companyName || email.split('@')[0])
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-') +
+          '-' +
+          userId.substring(0, 8);
+
+        // Create organization
+        const { data: org, error: orgError } = await supabase
+          .from('organizations')
+          .insert({
+            name: companyName || `${email.split('@')[0]}'s Organization`,
+            slug: orgSlug,
+            subscription_plan: 'starter',
+            subscription_status: 'active',
+          })
+          .select()
+          .single();
+
+        if (orgError) {
+          console.error('Error creating organization:', orgError);
+          throw orgError;
+        }
+
+        // Create user profile
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: userId,
+            email: email,
+            name: name || email.split('@')[0],
+          });
+
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+          throw profileError;
+        }
+
+        // Add user as admin to organization
+        const { error: memberError } = await supabase
+          .from('organization_members')
+          .insert({
+            organization_id: org.id,
+            user_id: userId,
+            role: 'admin',
+            joined_at: new Date().toISOString(),
+          });
+
+        if (memberError) {
+          console.error('Error creating organization membership:', memberError);
+          throw memberError;
+        }
+      } catch (setupError) {
+        console.error('Error setting up user organization:', setupError);
+        // User was created but org setup failed - log it but don't fail the signup
+        // The trigger should catch this on next login
       }
     }
 
