@@ -77,7 +77,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      console.error('Supabase user creation error:', error);
+      return NextResponse.json({
+        error: `Database error creating new user: ${error.message}`
+      }, { status: 400 });
     }
 
     // If invitation token provided, accept the invitation
