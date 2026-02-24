@@ -63,7 +63,43 @@ CHECK (subscription_plan IN ('starter', 'professional', 'business'));
 
 ---
 
-## Lesson 3: [Template for Next Lesson]
+## Lesson 3: Explicitly Set Constrained Columns in INSERTs
+
+**Date:** 2026-02-24
+
+**Problem:** New user signup failed with "Database error creating new user"
+
+**Root Cause:** Auth callback was inserting into `organizations` table without explicitly setting `subscription_plan`, relying on database defaults. However, CHECK constraints were preventing the insert.
+
+**Prevention Rule:**
+- Never rely on database defaults when columns have CHECK constraints
+- Explicitly set all constrained columns in INSERT statements
+- Test new user signup after any database schema changes
+
+**Example fix:**
+```typescript
+// ❌ BAD - Relies on defaults
+await supabase.from('organizations').insert({
+  name: orgName,
+});
+
+// ✅ GOOD - Explicitly sets all constrained fields
+await supabase.from('organizations').insert({
+  name: orgName,
+  subscription_plan: 'starter',
+  subscription_status: 'active',
+});
+```
+
+**Testing checklist after schema changes:**
+- [ ] Test new user signup
+- [ ] Test existing user login
+- [ ] Test user with pending invitation
+- [ ] Check all INSERT statements for constrained tables
+
+---
+
+## Lesson 4: [Template for Next Lesson]
 
 **Date:** YYYY-MM-DD
 
@@ -89,9 +125,10 @@ CHECK (subscription_plan IN ('starter', 'professional', 'business'));
 ## Patterns to Watch For
 
 ### Common Mistake Categories
-- [ ] Database migrations without data migration
-- [ ] Adding constraints before validating existing data
-- [ ] Backup files in source control
+- [x] Database migrations without data migration (Lesson 2)
+- [x] Adding constraints before validating existing data (Lesson 2)
+- [x] Backup files in source control (Lesson 1)
+- [x] Relying on database defaults with constraints (Lesson 3)
 - [ ] Hardcoded values instead of environment variables
 - [ ] Missing error handling
 - [ ] Security vulnerabilities (RLS, input validation)
@@ -104,7 +141,9 @@ Before committing any code:
 - [ ] No backup files (`_old`, `_backup`, `.bak`)
 - [ ] All environment variables in `.env.example`
 - [ ] Database changes include data migration
+- [ ] Constrained columns explicitly set in INSERTs
 - [ ] Error handling on all async operations
 - [ ] Input validation on all user data
 - [ ] TypeScript strict mode passes
 - [ ] No console.log in production code
+- [ ] Test new user signup after schema changes
