@@ -104,6 +104,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Get plan from metadata, default to 'professional' for backwards compatibility
   const plan = subscription.metadata?.plan || session.metadata?.plan || 'professional';
 
+  // Extract timestamp fields safely
+  const currentPeriodStart = 'current_period_start' in subscription
+    ? new Date((subscription as any).current_period_start * 1000).toISOString()
+    : new Date().toISOString();
+  const currentPeriodEnd = 'current_period_end' in subscription
+    ? new Date((subscription as any).current_period_end * 1000).toISOString()
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days from now as fallback
+
   await supabase
     .from('organizations')
     .update({
@@ -111,8 +119,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripe_subscription_id: subscription.id,
       subscription_plan: plan,
       subscription_status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_start: currentPeriodStart,
+      current_period_end: currentPeriodEnd,
     })
     .eq('id', organizationId);
 
@@ -136,11 +144,19 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     }
   }
 
+  // Extract timestamp fields safely
+  const currentPeriodStart = 'current_period_start' in subscription
+    ? new Date((subscription as any).current_period_start * 1000).toISOString()
+    : new Date().toISOString();
+  const currentPeriodEnd = 'current_period_end' in subscription
+    ? new Date((subscription as any).current_period_end * 1000).toISOString()
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
   const updateData: Record<string, string | number> = {
     stripe_subscription_id: subscription.id,
     subscription_status: subscription.status,
-    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    current_period_start: currentPeriodStart,
+    current_period_end: currentPeriodEnd,
   };
 
   // Get plan from metadata if available
