@@ -77,9 +77,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Supabase user creation error:', error);
+      console.error('Supabase user creation error:', JSON.stringify(error, null, 2));
       return NextResponse.json({
-        error: `Database error creating new user: ${error.message}`
+        error: error.message || 'Failed to create user account'
       }, { status: 400 });
     }
 
