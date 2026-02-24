@@ -322,6 +322,156 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-[#1d1d1f] mb-4">
+              Simple, transparent pricing
+            </h2>
+            <p className="text-xl text-[#6e6e73]">
+              Start free, upgrade as you grow
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Starter Plan */}
+            <div className="bg-white rounded-3xl p-8 border-2 border-gray-200 hover:border-gray-300 transition-colors">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-[#1d1d1f] mb-2">Starter</h3>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-5xl font-bold text-[#1d1d1f]">Free</span>
+                </div>
+                <p className="text-[#6e6e73]">Perfect for trying out DealPress</p>
+              </div>
+              <Link href="/signup">
+                <Button className="w-full rounded-full mb-6 bg-gray-900 hover:bg-gray-800">
+                  Get Started Free
+                </Button>
+              </Link>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">3 approval requests/month</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">1 template</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">1 team member</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">Email notifications</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">Basic analytics</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Plan - Most Popular */}
+            <div className="bg-gradient-to-br from-[#0071e3] to-[#00c6ff] rounded-3xl p-8 border-2 border-[#0071e3] relative shadow-2xl shadow-blue-500/25 transform md:scale-105">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#ff9500] text-white px-6 py-1 rounded-full text-sm font-semibold">
+                Most Popular
+              </div>
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-white mb-2">Professional</h3>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-5xl font-bold text-white">$49</span>
+                  <span className="text-blue-100">/month</span>
+                </div>
+                <p className="text-blue-100">For growing teams</p>
+              </div>
+              <Link href="/signup">
+                <Button className="w-full rounded-full mb-6 bg-white text-[#0071e3] hover:bg-gray-100">
+                  Start Free Trial
+                </Button>
+              </Link>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-white font-medium">50 approval requests/month</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-white font-medium">Unlimited templates</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-white font-medium">Up to 5 team members</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-white font-medium">Slack integration</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-white font-medium">Advanced analytics</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-white font-medium">Priority support</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Business Plan */}
+            <div className="bg-white rounded-3xl p-8 border-2 border-gray-200 hover:border-gray-300 transition-colors">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-[#1d1d1f] mb-2">Business</h3>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-5xl font-bold text-[#1d1d1f]">$99</span>
+                  <span className="text-[#6e6e73]">/month</span>
+                </div>
+                <p className="text-[#6e6e73]">For scaling organizations</p>
+              </div>
+              <Link href="/signup">
+                <Button className="w-full rounded-full mb-6 bg-gray-900 hover:bg-gray-800">
+                  Start Free Trial
+                </Button>
+              </Link>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f] font-medium">Unlimited requests</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">Unlimited templates</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">Up to 15 team members</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">Everything in Professional</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">Custom workflows</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#34c759] flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-[#1d1d1f]">Dedicated support</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ Note */}
+          <div className="text-center mt-12">
+            <p className="text-[#6e6e73]">
+              All plans include a 14-day free trial. No credit card required.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Social Proof / Testimonials */}
       <section className="py-24 bg-[#f5f5f7]">
         <div className="container mx-auto px-6">
