@@ -48,21 +48,31 @@ export async function GET(request: Request) {
 
         if (existingMembership) {
           // User already belongs to an organization - just create profile if missing
-          await supabase.from('user_profiles').insert({
+          const { error: profileError } = await supabase.from('user_profiles').insert({
             id: user.id,
             email: user.email,
             name: userName,
             avatar_url: user.user_metadata?.avatar_url || null,
           });
+
+          if (profileError) {
+            console.error('Error creating profile for existing member:', profileError);
+            return NextResponse.redirect(new URL('/login?error=profile_creation_failed', request.url));
+          }
         } else if (pendingInvitation) {
           // User has a pending invitation - just create profile, don't create org
           // The invitation acceptance flow will add them to the organization
-          await supabase.from('user_profiles').insert({
+          const { error: profileError } = await supabase.from('user_profiles').insert({
             id: user.id,
             email: user.email,
             name: userName,
             avatar_url: user.user_metadata?.avatar_url || null,
           });
+
+          if (profileError) {
+            console.error('Error creating profile for invited user:', profileError);
+            return NextResponse.redirect(new URL('/login?error=profile_creation_failed', request.url));
+          }
         } else {
           // No pending invitation - create new organization for this user
           // Extract company from email domain
@@ -84,21 +94,36 @@ export async function GET(request: Request) {
             .select()
             .single();
 
-          if (!orgError && org) {
+          if (orgError) {
+            console.error('Error creating organization:', orgError);
+            return NextResponse.redirect(new URL('/login?error=org_creation_failed', request.url));
+          }
+
+          if (org) {
             // Create user profile
-            await supabase.from('user_profiles').insert({
+            const { error: profileError } = await supabase.from('user_profiles').insert({
               id: user.id,
               email: user.email,
               name: userName,
               avatar_url: user.user_metadata?.avatar_url || null,
             });
 
+            if (profileError) {
+              console.error('Error creating user profile:', profileError);
+              return NextResponse.redirect(new URL('/login?error=profile_creation_failed', request.url));
+            }
+
             // Add user as admin to organization
-            await supabase.from('organization_members').insert({
+            const { error: memberError } = await supabase.from('organization_members').insert({
               organization_id: org.id,
               user_id: user.id,
               role: 'admin',
             });
+
+            if (memberError) {
+              console.error('Error creating organization membership:', memberError);
+              return NextResponse.redirect(new URL('/login?error=membership_creation_failed', request.url));
+            }
           }
         }
       }
