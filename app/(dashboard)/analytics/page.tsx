@@ -121,9 +121,9 @@ export default async function AnalyticsPage() {
                   <span className="text-sm text-[#1d1d1f]">All-time data</span>
                 </div>
               </div>
-              <Link href="/settings">
+              <Link href="/settings/billing">
                 <Button className="bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full">
-                  Upgrade to Pro - $10/user/mo
+                  Upgrade to Professional - $49/mo
                 </Button>
               </Link>
             </div>

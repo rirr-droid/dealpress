@@ -111,8 +111,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripe_subscription_id: subscription.id,
       subscription_plan: plan,
       subscription_status: subscription.status,
-      current_period_start: new Date((subscription as unknown as { current_period_start: number }).current_period_start * 1000).toISOString(),
-      current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     })
     .eq('id', organizationId);
 
@@ -139,8 +139,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const updateData: Record<string, string | number> = {
     stripe_subscription_id: subscription.id,
     subscription_status: subscription.status,
-    current_period_start: new Date((subscription as unknown as { current_period_start: number }).current_period_start * 1000).toISOString(),
-    current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
   };
 
   // Get plan from metadata if available
