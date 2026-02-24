@@ -19,7 +19,8 @@ export async function isAdmin(): Promise<boolean> {
       .eq('user_id', user.id)
       .single();
 
-    return membership?.role === 'admin';
+    // Allow both 'admin' and 'owner' roles (owner is legacy)
+    return membership?.role === 'admin' || membership?.role === 'owner';
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
@@ -29,7 +30,7 @@ export async function isAdmin(): Promise<boolean> {
 /**
  * Get current user's role
  */
-export async function getUserRole(): Promise<'admin' | 'member' | null> {
+export async function getUserRole(): Promise<'admin' | 'owner' | 'member' | null> {
   try {
     const supabase = await createClient();
     const user = await getCurrentUser();
@@ -44,7 +45,7 @@ export async function getUserRole(): Promise<'admin' | 'member' | null> {
       .eq('user_id', user.id)
       .single();
 
-    return membership?.role as 'admin' | 'member' | null;
+    return membership?.role as 'admin' | 'owner' | 'member' | null;
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;
