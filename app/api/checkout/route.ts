@@ -1,9 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCheckoutSession } from '@/lib/stripe';
 import { getCurrentUser, getUserOrganization } from '@/lib/auth';
+import { rateLimit, getClientIp, RATE_LIMITS } from '@/lib/security/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit checkout requests to prevent abuse
+    const ip = getClientIp(request);
+    const rateLimitResult = rateLimit(ip, RATE_LIMITS.STRICT);
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          }
+        }
+      );
+    }
+
     const user = await getCurrentUser();
 
     if (!user) {

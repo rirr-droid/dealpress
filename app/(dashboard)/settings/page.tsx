@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 export default async function SettingsPage() {
   const role = await getUserRole();
 
-  // Settings are admin-only
-  if (role !== 'admin') {
+  // Settings are admin-only (allow both 'admin' and 'owner' for backwards compatibility)
+  if (role !== 'admin' && role !== 'owner') {
     redirect('/dashboard');
   }
 
